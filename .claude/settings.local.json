@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node -e \"const mp = require\\('/home/jmgoya/Documentos/ananda-para-el-alma/node_modules/mercadopago'\\); console.log\\(Object.keys\\(mp\\)\\)\")",
+      "Bash(npm install *)",
+      "Bash(npm run *)",
+      "Bash(mkdir -p /home/jmgoya/Documentos/ananda-para-el-alma/app/api/redemption-codes/\\\\[id\\\\])",
+      "Bash(mkdir -p /home/jmgoya/Documentos/ananda-para-el-alma/app/api/meditaciones/\\\\[id\\\\]/access-check)"
+    ]
+  }
+}
