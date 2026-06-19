@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import ImageUpload from '@/components/ImageUpload'
 
 interface SiteConfig {
   site_name: string
@@ -124,16 +125,17 @@ export default function AdminSettingsPage() {
             <input type="email" className="input-field" value={siteConfig.contact_email} onChange={(e) => setSiteConfig({ ...siteConfig, contact_email: e.target.value })} placeholder="natalia@anandaparaelalma.com" />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">URL Foto de la profesora</label>
-            <input className="input-field" value={siteConfig.professor_photo_url} onChange={(e) => setSiteConfig({ ...siteConfig, professor_photo_url: e.target.value })} placeholder="https://..." />
-            <p className="text-xs text-gray-400 mt-1">URL de imagen (subila antes a Supabase Storage)</p>
-          </div>
+          <ImageUpload
+            label="Foto de la profesora"
+            value={siteConfig.professor_photo_url}
+            onChange={(url) => setSiteConfig({ ...siteConfig, professor_photo_url: url })}
+          />
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">URL Logo</label>
-            <input className="input-field" value={siteConfig.logo_url} onChange={(e) => setSiteConfig({ ...siteConfig, logo_url: e.target.value })} placeholder="https://..." />
-          </div>
+          <ImageUpload
+            label="Logo"
+            value={siteConfig.logo_url}
+            onChange={(url) => setSiteConfig({ ...siteConfig, logo_url: url })}
+          />
 
           <div className="grid grid-cols-3 gap-4">
             <div>

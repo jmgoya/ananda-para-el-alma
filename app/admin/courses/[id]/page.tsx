@@ -2,6 +2,7 @@
 
 import { useState, useEffect, use } from 'react'
 import { useRouter } from 'next/navigation'
+import ImageUpload from '@/components/ImageUpload'
 
 interface Material {
   id: string
@@ -141,10 +142,11 @@ export default function AdminCourseEditPage({ params }: { params: Promise<{ id: 
             </select>
           </div>
         </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">URL portada</label>
-          <input className="input-field" value={form.cover_url} onChange={(e) => setForm({ ...form, cover_url: e.target.value })} placeholder="https://..." />
-        </div>
+        <ImageUpload
+          label="Portada del curso"
+          value={form.cover_url}
+          onChange={(url) => setForm({ ...form, cover_url: url })}
+        />
         <button type="submit" disabled={saving} className="btn-primary disabled:opacity-60">
           {saving ? 'Guardando...' : 'Guardar cambios'}
         </button>

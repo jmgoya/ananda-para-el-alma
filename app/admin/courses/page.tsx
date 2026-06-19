@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { formatPrice } from '@/lib/utils'
+import ImageUpload from '@/components/ImageUpload'
 
 interface Course {
   id: string
@@ -104,10 +105,11 @@ export default function AdminCoursesPage() {
                 </select>
               </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">URL portada</label>
-              <input className="input-field" value={form.cover_url} onChange={(e) => setForm({ ...form, cover_url: e.target.value })} placeholder="https://..." />
-            </div>
+            <ImageUpload
+              label="Portada del curso"
+              value={form.cover_url}
+              onChange={(url) => setForm({ ...form, cover_url: url })}
+            />
             <div className="flex gap-3">
               <button type="submit" disabled={saving} className="btn-primary disabled:opacity-60">
                 {saving ? 'Guardando...' : 'Crear curso'}

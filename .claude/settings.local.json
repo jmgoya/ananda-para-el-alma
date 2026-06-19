@@ -5,7 +5,8 @@
       "Bash(npm install *)",
       "Bash(npm run *)",
       "Bash(mkdir -p /home/jmgoya/Documentos/ananda-para-el-alma/app/api/redemption-codes/\\\\[id\\\\])",
-      "Bash(mkdir -p /home/jmgoya/Documentos/ananda-para-el-alma/app/api/meditaciones/\\\\[id\\\\]/access-check)"
+      "Bash(mkdir -p /home/jmgoya/Documentos/ananda-para-el-alma/app/api/meditaciones/\\\\[id\\\\]/access-check)",
+      "Bash(node -e \"require\\('resend'\\)\")"
     ]
   }
 }

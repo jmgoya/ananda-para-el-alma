@@ -25,7 +25,29 @@ export default async function HomePage() {
         style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))' }}
       >
         <div className="max-w-6xl mx-auto">
-          <div className="flex flex-col-reverse md:flex-row items-center gap-10 md:gap-16">
+          <div className="flex flex-col md:flex-row items-center gap-10 md:gap-16">
+
+            {/* Professor photo — izquierda en desktop, arriba en mobile */}
+            {siteConfig?.professor_photo_url ? (
+              <div className="flex-shrink-0 flex justify-center">
+                <div className="relative w-56 h-56 md:w-80 md:h-80 rounded-full overflow-hidden border-4 border-white/40 shadow-2xl ring-8 ring-white/10">
+                  <Image
+                    src={siteConfig.professor_photo_url}
+                    alt={siteConfig.site_name ?? 'Natalia Schwaderer'}
+                    fill
+                    className="object-cover"
+                    priority
+                    sizes="(max-width: 768px) 224px, 320px"
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="flex-shrink-0 flex justify-center">
+                <div className="w-56 h-56 md:w-80 md:h-80 rounded-full bg-white/10 border-4 border-white/30 flex items-center justify-center shadow-2xl">
+                  <span className="text-7xl md:text-8xl">🌸</span>
+                </div>
+              </div>
+            )}
 
             {/* Text */}
             <div className="flex-1 text-center md:text-left space-y-5">
@@ -53,27 +75,6 @@ export default async function HomePage() {
               </div>
             </div>
 
-            {/* Professor photo */}
-            {siteConfig?.professor_photo_url ? (
-              <div className="flex-shrink-0 flex justify-center">
-                <div className="relative w-56 h-56 md:w-80 md:h-80 rounded-full overflow-hidden border-4 border-white/40 shadow-2xl ring-8 ring-white/10">
-                  <Image
-                    src={siteConfig.professor_photo_url}
-                    alt={siteConfig.site_name ?? 'Natalia Schwaderer'}
-                    fill
-                    className="object-cover"
-                    priority
-                    sizes="(max-width: 768px) 224px, 320px"
-                  />
-                </div>
-              </div>
-            ) : (
-              <div className="flex-shrink-0 flex justify-center">
-                <div className="w-56 h-56 md:w-80 md:h-80 rounded-full bg-white/10 border-4 border-white/30 flex items-center justify-center shadow-2xl">
-                  <span className="text-7xl md:text-8xl">🌸</span>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </section>

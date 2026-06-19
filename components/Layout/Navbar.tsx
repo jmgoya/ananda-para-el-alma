@@ -17,9 +17,9 @@ export default function Navbar({ siteName, logoUrl }: { siteName?: string; logoU
             <Image
               src={logoUrl}
               alt={siteName ?? 'Logo'}
-              width={140}
-              height={40}
-              className="object-contain h-9 w-auto"
+              width={200}
+              height={56}
+              className="object-contain h-12 md:h-14 w-auto"
               priority
             />
           ) : (

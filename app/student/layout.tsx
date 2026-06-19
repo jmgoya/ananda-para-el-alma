@@ -12,6 +12,8 @@ export default async function StudentLayout({ children }: { children: React.Reac
       <div className="flex items-center gap-4 mb-8 border-b border-gray-200 pb-4">
         <Link href="/student" className="font-medium text-gray-500 hover:text-gray-800">Mi Área</Link>
         <span className="text-gray-300">|</span>
+        <Link href="/student/perfil" className="font-medium text-gray-500 hover:text-gray-800">Perfil</Link>
+        <span className="text-gray-300">|</span>
         <span className="text-sm text-gray-400">{session.user.email}</span>
       </div>
       {children}

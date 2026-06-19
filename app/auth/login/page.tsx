@@ -82,12 +82,19 @@ function LoginForm() {
             </button>
           </form>
 
-          <p className="text-center text-sm text-gray-500">
-            ¿No tenés cuenta?{' '}
-            <Link href="/auth/register" className="font-medium" style={{ color: 'var(--color-primary)' }}>
-              Registrate
-            </Link>
-          </p>
+          <div className="text-center space-y-2">
+            <p className="text-sm text-gray-500">
+              ¿No tenés cuenta?{' '}
+              <Link href="/auth/register" className="font-medium" style={{ color: 'var(--color-primary)' }}>
+                Registrate
+              </Link>
+            </p>
+            <p className="text-sm">
+              <Link href="/auth/forgot-password" className="text-gray-400 hover:text-gray-600">
+                ¿Olvidaste tu contraseña?
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
     </div>
