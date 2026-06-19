@@ -19,7 +19,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body className="min-h-full flex flex-col">
         <AuthProvider>
           <ThemeProvider config={siteConfig} />
-          <Navbar siteName={siteConfig?.site_name} />
+          <Navbar siteName={siteConfig?.site_name} logoUrl={siteConfig?.logo_url} />
           <main className="flex-1">{children}</main>
           <Footer siteName={siteConfig?.site_name} email={siteConfig?.contact_email} />
         </AuthProvider>

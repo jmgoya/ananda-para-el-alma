@@ -1,18 +1,30 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { useSession, signOut } from 'next-auth/react'
 import { useState } from 'react'
 
-export default function Navbar({ siteName }: { siteName?: string }) {
+export default function Navbar({ siteName, logoUrl }: { siteName?: string; logoUrl?: string }) {
   const { data: session } = useSession()
   const [open, setOpen] = useState(false)
 
   return (
     <nav className="bg-white shadow-sm border-b border-gray-100 sticky top-0 z-50">
       <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-        <Link href="/" className="font-bold text-xl" style={{ color: 'var(--color-primary)' }}>
-          {siteName ?? 'Ananda para el Alma'}
+        <Link href="/" className="flex items-center gap-2 font-bold text-xl" style={{ color: 'var(--color-primary)' }}>
+          {logoUrl ? (
+            <Image
+              src={logoUrl}
+              alt={siteName ?? 'Logo'}
+              width={140}
+              height={40}
+              className="object-contain h-9 w-auto"
+              priority
+            />
+          ) : (
+            siteName ?? 'Ananda para el Alma'
+          )}
         </Link>
 
         {/* Desktop nav */}

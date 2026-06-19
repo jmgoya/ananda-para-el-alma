@@ -3,6 +3,8 @@ import Link from 'next/link'
 import { getSiteConfig, getCourses, getMeditations, getPublications } from '@/lib/db'
 import { formatPrice } from '@/lib/utils'
 
+export const dynamic = 'force-dynamic'
+
 export default async function HomePage() {
   const [siteConfig, courses, meditations, publications] = await Promise.all([
     getSiteConfig().catch(() => null),
@@ -19,37 +21,59 @@ export default async function HomePage() {
     <div>
       {/* Hero */}
       <section
-        className="relative py-20 px-4 text-white text-center"
+        className="relative py-16 md:py-24 px-4 text-white overflow-hidden"
         style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))' }}
       >
-        <div className="max-w-4xl mx-auto space-y-6">
-          {siteConfig?.professor_photo_url && (
-            <div className="flex justify-center">
-              <div className="w-36 h-36 md:w-48 md:h-48 rounded-full overflow-hidden border-4 border-white shadow-xl">
-                <Image
-                  src={siteConfig.professor_photo_url}
-                  alt="Natalia Schwaderer"
-                  width={192}
-                  height={192}
-                  className="object-cover w-full h-full"
-                />
+        <div className="max-w-6xl mx-auto">
+          <div className="flex flex-col-reverse md:flex-row items-center gap-10 md:gap-16">
+
+            {/* Text */}
+            <div className="flex-1 text-center md:text-left space-y-5">
+              <h1 className="text-4xl md:text-5xl font-bold leading-tight">
+                {siteConfig?.site_name ?? 'Ananda para el Alma'}
+              </h1>
+              <p className="text-xl md:text-2xl opacity-90">
+                {siteConfig?.tagline ?? 'Tu espacio de espiritualidad y bienestar'}
+              </p>
+              <p className="text-base opacity-75">Tarot · Chamanismo · Meditación · Constelaciones Familiares</p>
+              <div className="flex flex-wrap justify-center md:justify-start gap-4 pt-2">
+                <Link
+                  href="/courses"
+                  className="bg-white font-semibold px-7 py-3 rounded-lg hover:opacity-90 transition-opacity shadow-md"
+                  style={{ color: 'var(--color-primary)' }}
+                >
+                  Ver Cursos
+                </Link>
+                <Link
+                  href="/meditaciones"
+                  className="border-2 border-white text-white font-semibold px-7 py-3 rounded-lg hover:bg-white/10 transition-colors"
+                >
+                  Meditaciones Gratis
+                </Link>
               </div>
             </div>
-          )}
-          <h1 className="text-4xl md:text-5xl font-bold">
-            {siteConfig?.site_name ?? 'Ananda para el Alma'}
-          </h1>
-          <p className="text-xl md:text-2xl opacity-90">
-            {siteConfig?.tagline ?? 'Tu espacio de espiritualidad y bienestar'}
-          </p>
-          <p className="text-base opacity-80 max-w-2xl mx-auto">Tarot · Chamanismo · Meditación · Constelaciones Familiares</p>
-          <div className="flex flex-wrap justify-center gap-4 pt-4">
-            <Link href="/courses" className="bg-white font-semibold px-6 py-3 rounded-lg hover:opacity-90 transition-opacity" style={{ color: 'var(--color-primary)' }}>
-              Ver Cursos
-            </Link>
-            <Link href="/meditaciones" className="border-2 border-white text-white font-semibold px-6 py-3 rounded-lg hover:bg-white/10 transition-colors">
-              Meditaciones Gratis
-            </Link>
+
+            {/* Professor photo */}
+            {siteConfig?.professor_photo_url ? (
+              <div className="flex-shrink-0 flex justify-center">
+                <div className="relative w-56 h-56 md:w-80 md:h-80 rounded-full overflow-hidden border-4 border-white/40 shadow-2xl ring-8 ring-white/10">
+                  <Image
+                    src={siteConfig.professor_photo_url}
+                    alt={siteConfig.site_name ?? 'Natalia Schwaderer'}
+                    fill
+                    className="object-cover"
+                    priority
+                    sizes="(max-width: 768px) 224px, 320px"
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="flex-shrink-0 flex justify-center">
+                <div className="w-56 h-56 md:w-80 md:h-80 rounded-full bg-white/10 border-4 border-white/30 flex items-center justify-center shadow-2xl">
+                  <span className="text-7xl md:text-8xl">🌸</span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </section>
@@ -63,8 +87,8 @@ export default async function HomePage() {
               {featuredCourses.map((course) => (
                 <Link key={course.id} href={`/courses/${course.id}`} className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden group">
                   {course.cover_url ? (
-                    <div className="h-44 overflow-hidden">
-                      <Image src={course.cover_url} alt={course.title} width={400} height={176} className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300" />
+                    <div className="h-44 overflow-hidden relative">
+                      <Image src={course.cover_url} alt={course.title} fill className="object-cover group-hover:scale-105 transition-transform duration-300" sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw" />
                     </div>
                   ) : (
                     <div className="h-44 flex items-center justify-center" style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))' }}>
@@ -122,8 +146,8 @@ export default async function HomePage() {
               {recentPublications.map((pub) => (
                 <Link key={pub.id} href={`/publicaciones/${pub.slug}`} className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden">
                   {pub.image_url && (
-                    <div className="h-48 overflow-hidden">
-                      <Image src={pub.image_url} alt={pub.title} width={400} height={192} className="object-cover w-full h-full" />
+                    <div className="h-48 overflow-hidden relative">
+                      <Image src={pub.image_url} alt={pub.title} fill className="object-cover" sizes="(max-width: 640px) 100vw, 33vw" />
                     </div>
                   )}
                   <div className="p-4">
