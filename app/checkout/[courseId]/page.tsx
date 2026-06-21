@@ -17,7 +17,14 @@ interface Course {
 
 interface PaymentConfig {
   online_payments_enabled: boolean
-  payment_instructions: string
+}
+
+interface ManualPaymentMethod {
+  id: string
+  name: string
+  instructions: string
+  enabled: boolean
+  order: number
 }
 
 export default function CheckoutPage({ params }: { params: Promise<{ courseId: string }> }) {
@@ -27,7 +34,9 @@ export default function CheckoutPage({ params }: { params: Promise<{ courseId: s
 
   const [course, setCourse] = useState<Course | null>(null)
   const [paymentConfig, setPaymentConfig] = useState<PaymentConfig | null>(null)
+  const [manualMethods, setManualMethods] = useState<ManualPaymentMethod[]>([])
   const [step, setStep] = useState<'choose' | 'manual'>('choose')
+  const [selectedMethod, setSelectedMethod] = useState<ManualPaymentMethod | null>(null)
   const [paymentNote, setPaymentNote] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -40,12 +49,17 @@ export default function CheckoutPage({ params }: { params: Promise<{ courseId: s
 
   useEffect(() => {
     async function load() {
-      const [courseRes, configRes] = await Promise.all([
+      const [courseRes, configRes, methodsRes] = await Promise.all([
         fetch(`/api/courses/${courseId}`),
         fetch('/api/payment-config/public'),
+        fetch('/api/manual-payment-methods'),
       ])
       if (courseRes.ok) setCourse(await courseRes.json())
       if (configRes.ok) setPaymentConfig(await configRes.json())
+      if (methodsRes.ok) {
+        const methods: ManualPaymentMethod[] = await methodsRes.json()
+        setManualMethods(methods.filter(m => m.enabled))
+      }
     }
     load()
   }, [courseId])
@@ -68,6 +82,11 @@ export default function CheckoutPage({ params }: { params: Promise<{ courseId: s
     }
   }
 
+  function selectManualMethod(method: ManualPaymentMethod) {
+    setSelectedMethod(method)
+    setStep('manual')
+  }
+
   async function handleManualPayment() {
     setLoading(true)
     setError('')
@@ -79,6 +98,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ courseId: s
           course_id: courseId,
           payment_method: 'manual',
           payment_note: paymentNote,
+          manual_payment_method_id: selectedMethod?.id ?? null,
         }),
       })
       const data = await res.json()
@@ -89,6 +109,8 @@ export default function CheckoutPage({ params }: { params: Promise<{ courseId: s
       setLoading(false)
     }
   }
+
+  const hasAnyPaymentMethod = paymentConfig?.online_payments_enabled || manualMethods.length > 0
 
   if (status === 'loading' || !course) {
     return (
@@ -125,12 +147,19 @@ export default function CheckoutPage({ params }: { params: Promise<{ courseId: s
           <div className="space-y-4">
             <h2 className="text-lg font-semibold text-gray-700 text-center">Elegí cómo querés pagar</h2>
 
+            {!hasAnyPaymentMethod && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6 text-center text-yellow-700">
+                <p className="font-medium">No hay métodos de pago disponibles actualmente</p>
+                <p className="text-sm mt-1">Contactá con Natalia para coordinar el acceso</p>
+              </div>
+            )}
+
             {paymentConfig?.online_payments_enabled && (
               <button
                 onClick={handleOnlinePayment}
                 disabled={loading}
                 className="w-full bg-white rounded-xl shadow-sm border-2 hover:border-blue-400 transition-colors p-6 text-left group disabled:opacity-60"
-                style={{ borderColor: loading ? undefined : 'transparent' }}
+                style={{ borderColor: 'transparent' }}
               >
                 <div className="flex items-start gap-4">
                   <div className="text-3xl">💳</div>
@@ -143,34 +172,37 @@ export default function CheckoutPage({ params }: { params: Promise<{ courseId: s
               </button>
             )}
 
-            <button
-              onClick={() => setStep('manual')}
-              className="w-full bg-white rounded-xl shadow-sm border-2 hover:border-green-400 transition-colors p-6 text-left group"
-              style={{ borderColor: 'transparent' }}
-            >
-              <div className="flex items-start gap-4">
-                <div className="text-3xl">💵</div>
-                <div>
-                  <p className="font-bold text-gray-800 group-hover:text-green-600">Pagar en efectivo o transferencia</p>
-                  <p className="text-sm text-gray-500 mt-1">Coordinás el pago directamente con Natalia</p>
-                  <p className="text-xs text-gray-400 mt-1">Acceso disponible tras la confirmación</p>
+            {manualMethods.map((method) => (
+              <button
+                key={method.id}
+                onClick={() => selectManualMethod(method)}
+                className="w-full bg-white rounded-xl shadow-sm border-2 hover:border-green-400 transition-colors p-6 text-left group"
+                style={{ borderColor: 'transparent' }}
+              >
+                <div className="flex items-start gap-4">
+                  <div className="text-3xl">💵</div>
+                  <div>
+                    <p className="font-bold text-gray-800 group-hover:text-green-600">Pagar en {method.name}</p>
+                    <p className="text-sm text-gray-500 mt-1">Coordinás el pago directamente con Natalia</p>
+                    <p className="text-xs text-gray-400 mt-1">Acceso disponible tras la confirmación</p>
+                  </div>
                 </div>
-              </div>
-            </button>
+              </button>
+            ))}
           </div>
         )}
 
-        {step === 'manual' && (
+        {step === 'manual' && selectedMethod && (
           <div className="bg-white rounded-2xl shadow-sm p-6 space-y-4">
             <button onClick={() => setStep('choose')} className="text-sm text-gray-400 hover:text-gray-600 flex items-center gap-1">
               ← Volver
             </button>
-            <h2 className="text-lg font-semibold text-gray-700">Pago manual</h2>
+            <h2 className="text-lg font-semibold text-gray-700">Pago en {selectedMethod.name}</h2>
 
-            {paymentConfig?.payment_instructions && (
+            {selectedMethod.instructions && (
               <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                 <p className="text-sm font-medium text-green-800 mb-1">Instrucciones de pago:</p>
-                <p className="text-sm text-green-700 whitespace-pre-wrap">{paymentConfig.payment_instructions}</p>
+                <p className="text-sm text-green-700 whitespace-pre-wrap">{selectedMethod.instructions}</p>
               </div>
             )}
 

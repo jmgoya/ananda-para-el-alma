@@ -3,6 +3,8 @@ import Image from 'next/image'
 import { getCourses } from '@/lib/db'
 import { formatPrice } from '@/lib/utils'
 
+export const dynamic = 'force-dynamic'
+
 export default async function CoursesPage() {
   const courses = await getCourses(true).catch(() => [])
 

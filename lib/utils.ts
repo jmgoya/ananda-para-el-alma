@@ -18,3 +18,9 @@ export function extractYouTubeId(url: string): string | null {
   )
   return match?.[1] ?? null
 }
+
+export function extractSpotifyEmbed(url: string): string | null {
+  const match = url.match(/open\.spotify\.com\/(track|episode|playlist|album|show)\/([a-zA-Z0-9]+)/)
+  if (!match) return null
+  return `https://open.spotify.com/embed/${match[1]}/${match[2]}`
+}

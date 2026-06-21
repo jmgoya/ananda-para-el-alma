@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
 
   let query = supabaseAdmin
     .from('course_access')
-    .select('*, courses(id, title, price, cover_url), users(id, email, name)')
+    .select('*, courses(id, title, price, cover_url), users(id, email, name), manual_payment_methods(name)')
 
   if (session.user.role === 'admin') {
     if (userId) query = query.eq('user_id', userId)
@@ -33,9 +33,8 @@ export async function POST(request: NextRequest) {
   if (!session?.user) return Response.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await request.json()
-  const { course_id, payment_method, payment_note } = body
+  const { course_id, payment_method, payment_note, manual_payment_method_id } = body
 
-  // Check for existing approved access
   const { data: existing } = await supabaseAdmin
     .from('course_access')
     .select('id, status')
@@ -48,15 +47,18 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: 'Ya tenés acceso a este curso' }, { status: 400 })
   }
 
+  const insertData: Record<string, unknown> = {
+    user_id: session.user.id,
+    course_id,
+    status: 'pending',
+    payment_method: payment_method ?? 'manual',
+    payment_note,
+  }
+  if (manual_payment_method_id) insertData.manual_payment_method_id = manual_payment_method_id
+
   const { data, error } = await supabaseAdmin
     .from('course_access')
-    .insert({
-      user_id: session.user.id,
-      course_id,
-      status: 'pending',
-      payment_method: payment_method ?? 'manual',
-      payment_note,
-    })
+    .insert(insertData)
     .select()
     .single()
 

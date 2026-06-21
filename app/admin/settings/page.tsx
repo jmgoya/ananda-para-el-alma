@@ -18,7 +18,14 @@ interface PaymentConfig {
   online_payments_enabled: boolean
   mercadopago_access_token: string
   mercadopago_public_key: string
-  payment_instructions: string
+}
+
+interface ManualPaymentMethod {
+  id: string
+  name: string
+  instructions: string
+  enabled: boolean
+  order: number
 }
 
 export default function AdminSettingsPage() {
@@ -37,8 +44,11 @@ export default function AdminSettingsPage() {
     online_payments_enabled: false,
     mercadopago_access_token: '',
     mercadopago_public_key: '',
-    payment_instructions: '',
   })
+  const [manualMethods, setManualMethods] = useState<ManualPaymentMethod[]>([])
+  const [savingMethodId, setSavingMethodId] = useState<string | null>(null)
+  const [showAddForm, setShowAddForm] = useState(false)
+  const [newMethodForm, setNewMethodForm] = useState({ name: '', instructions: '' })
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
 
@@ -46,11 +56,22 @@ export default function AdminSettingsPage() {
     Promise.all([
       fetch('/api/site-config').then((r) => r.json()),
       fetch('/api/payment-config').then((r) => r.json()),
-    ]).then(([site, payment]) => {
+      fetch('/api/manual-payment-methods').then((r) => r.json()),
+    ]).then(([site, payment, methods]) => {
       if (site && !site.error) setSiteConfig(site)
-      if (payment && !payment.error) setPaymentConfig(payment)
+      if (payment && !payment.error) setPaymentConfig({
+        online_payments_enabled: payment.online_payments_enabled,
+        mercadopago_access_token: payment.mercadopago_access_token ?? '',
+        mercadopago_public_key: payment.mercadopago_public_key ?? '',
+      })
+      if (Array.isArray(methods)) setManualMethods(methods)
     })
   }, [])
+
+  function showMsg(text: string) {
+    setMessage(text)
+    setTimeout(() => setMessage(''), 3000)
+  }
 
   async function saveSiteConfig(e: React.FormEvent) {
     e.preventDefault()
@@ -61,8 +82,7 @@ export default function AdminSettingsPage() {
       body: JSON.stringify(siteConfig),
     })
     setSaving(false)
-    setMessage(res.ok ? '✓ Configuración guardada' : '✗ Error al guardar')
-    setTimeout(() => setMessage(''), 3000)
+    showMsg(res.ok ? '✓ Configuración guardada' : '✗ Error al guardar')
   }
 
   async function savePaymentConfig(e: React.FormEvent) {
@@ -74,8 +94,59 @@ export default function AdminSettingsPage() {
       body: JSON.stringify(paymentConfig),
     })
     setSaving(false)
-    setMessage(res.ok ? '✓ Configuración de pagos guardada' : '✗ Error al guardar')
-    setTimeout(() => setMessage(''), 3000)
+    showMsg(res.ok ? '✓ Configuración de pagos guardada' : '✗ Error al guardar')
+  }
+
+  function updateMethod(id: string, field: keyof ManualPaymentMethod, value: string | boolean) {
+    setManualMethods(prev => prev.map(m => m.id === id ? { ...m, [field]: value } : m))
+  }
+
+  async function saveMethod(id: string) {
+    const method = manualMethods.find(m => m.id === id)
+    if (!method) return
+    setSavingMethodId(id)
+    const res = await fetch(`/api/manual-payment-methods/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: method.name, instructions: method.instructions, enabled: method.enabled, order: method.order }),
+    })
+    setSavingMethodId(null)
+    if (!res.ok) showMsg('✗ Error al guardar el método')
+    else showMsg('✓ Método guardado')
+  }
+
+  async function deleteMethod(id: string) {
+    if (!confirm('¿Eliminar este método de pago?')) return
+    const res = await fetch(`/api/manual-payment-methods/${id}`, { method: 'DELETE' })
+    if (!res.ok) {
+      const data = await res.json()
+      alert(data.error ?? 'Error al eliminar')
+      return
+    }
+    setManualMethods(prev => prev.filter(m => m.id !== id))
+  }
+
+  async function addMethod(e: React.FormEvent) {
+    e.preventDefault()
+    if (!newMethodForm.name.trim()) return
+    const res = await fetch('/api/manual-payment-methods', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: newMethodForm.name,
+        instructions: newMethodForm.instructions,
+        enabled: true,
+        order: manualMethods.length + 1,
+      }),
+    })
+    if (res.ok) {
+      const data = await res.json()
+      setManualMethods(prev => [...prev, data])
+      setNewMethodForm({ name: '', instructions: '' })
+      setShowAddForm(false)
+    } else {
+      showMsg('✗ Error al agregar el método')
+    }
   }
 
   return (
@@ -169,70 +240,167 @@ export default function AdminSettingsPage() {
 
       {/* Payments Tab */}
       {tab === 'payments' && (
-        <form onSubmit={savePaymentConfig} className="bg-white rounded-xl shadow-sm p-6 space-y-5">
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-700">
-            <p className="font-medium mb-1">Configuración de pagos</p>
-            <p>Las credenciales de MercadoPago deben ser de <strong>tu cuenta de MercadoPago</strong> (la que recibirá los pagos). No se comparten con nadie ni se guardan en el código.</p>
-          </div>
-
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-            <div>
-              <p className="font-medium text-gray-700">Habilitar pago online con MercadoPago</p>
-              <p className="text-sm text-gray-500">Permite a los usuarios pagar con tarjeta o saldo MP</p>
+        <div className="space-y-6">
+          {/* MercadoPago */}
+          <form onSubmit={savePaymentConfig} className="bg-white rounded-xl shadow-sm p-6 space-y-5">
+            <h2 className="font-semibold text-gray-700">MercadoPago</h2>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-700">
+              <p className="font-medium mb-1">Credenciales de tu cuenta</p>
+              <p>Las credenciales deben ser de <strong>tu cuenta de MercadoPago</strong> (la que recibirá los pagos). No se comparten ni se guardan en el código.</p>
             </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                className="sr-only peer"
-                checked={paymentConfig.online_payments_enabled}
-                onChange={(e) => setPaymentConfig({ ...paymentConfig, online_payments_enabled: e.target.checked })}
-              />
-              <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-purple-600 transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-5"></div>
-            </label>
-          </div>
 
-          {paymentConfig.online_payments_enabled && (
-            <>
+            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">MercadoPago Access Token</label>
-                <input
-                  type="password"
-                  className="input-field font-mono"
-                  value={paymentConfig.mercadopago_access_token}
-                  onChange={(e) => setPaymentConfig({ ...paymentConfig, mercadopago_access_token: e.target.value })}
-                  placeholder="APP_USR-..."
-                />
-                <p className="text-xs text-gray-400 mt-1">Token de acceso de tu cuenta MercadoPago (obtenelo en Credentials en el panel de MP)</p>
+                <p className="font-medium text-gray-700">Habilitar pago online con MercadoPago</p>
+                <p className="text-sm text-gray-500">Permite a los usuarios pagar con tarjeta o saldo MP</p>
               </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="sr-only peer"
+                  checked={paymentConfig.online_payments_enabled}
+                  onChange={(e) => setPaymentConfig({ ...paymentConfig, online_payments_enabled: e.target.checked })}
+                />
+                <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-purple-600 transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-5"></div>
+              </label>
+            </div>
+
+            {paymentConfig.online_payments_enabled && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">MercadoPago Access Token</label>
+                  <input
+                    type="password"
+                    className="input-field font-mono"
+                    value={paymentConfig.mercadopago_access_token}
+                    onChange={(e) => setPaymentConfig({ ...paymentConfig, mercadopago_access_token: e.target.value })}
+                    placeholder="APP_USR-..."
+                  />
+                  <p className="text-xs text-gray-400 mt-1">Token de acceso de tu cuenta MercadoPago (Credentials en el panel de MP)</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">MercadoPago Public Key</label>
+                  <input
+                    type="password"
+                    className="input-field font-mono"
+                    value={paymentConfig.mercadopago_public_key}
+                    onChange={(e) => setPaymentConfig({ ...paymentConfig, mercadopago_public_key: e.target.value })}
+                    placeholder="APP_USR-..."
+                  />
+                </div>
+              </>
+            )}
+
+            <button type="submit" disabled={saving} className="btn-primary disabled:opacity-60">
+              {saving ? 'Guardando...' : 'Guardar configuración de MercadoPago'}
+            </button>
+          </form>
+
+          {/* Manual Payment Methods */}
+          <div className="bg-white rounded-xl shadow-sm p-6 space-y-5">
+            <div className="flex items-center justify-between">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">MercadoPago Public Key</label>
-                <input
-                  type="password"
-                  className="input-field font-mono"
-                  value={paymentConfig.mercadopago_public_key}
-                  onChange={(e) => setPaymentConfig({ ...paymentConfig, mercadopago_public_key: e.target.value })}
-                  placeholder="APP_USR-..."
-                />
+                <h2 className="font-semibold text-gray-700">Métodos de pago manual</h2>
+                <p className="text-sm text-gray-500 mt-0.5">Efectivo, transferencia u otros. Los habilitados aparecen en el checkout.</p>
               </div>
-            </>
-          )}
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Instrucciones de pago manual</label>
-            <textarea
-              className="input-field resize-none"
-              rows={5}
-              value={paymentConfig.payment_instructions}
-              onChange={(e) => setPaymentConfig({ ...paymentConfig, payment_instructions: e.target.value })}
-              placeholder={'Ejemplo:\nAliás: natalia.alma\nCBU: 1234567890123456789012\n\nTransferís el importe del curso y me avisás por WhatsApp.'}
-            />
-            <p className="text-xs text-gray-400 mt-1">Este texto lo verán los usuarios al elegir pago manual</p>
+            {manualMethods.length === 0 && !showAddForm && (
+              <div className="text-center py-6 text-gray-400">
+                <p className="text-3xl mb-2">💵</p>
+                <p className="text-sm">No hay métodos de pago manual configurados</p>
+              </div>
+            )}
+
+            <div className="space-y-4">
+              {manualMethods.map((method) => (
+                <div key={method.id} className="border border-gray-200 rounded-xl p-5 space-y-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <input
+                      className="input-field flex-1 font-medium"
+                      value={method.name}
+                      onChange={(e) => updateMethod(method.id, 'name', e.target.value)}
+                      placeholder="Nombre del método"
+                    />
+                    <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
+                      <input
+                        type="checkbox"
+                        className="sr-only peer"
+                        checked={method.enabled}
+                        onChange={(e) => updateMethod(method.id, 'enabled', e.target.checked)}
+                      />
+                      <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-green-500 transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-5"></div>
+                    </label>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Instrucciones (alias, CBU, horarios, etc.)</label>
+                    <textarea
+                      className="input-field resize-none text-sm"
+                      rows={3}
+                      value={method.instructions ?? ''}
+                      onChange={(e) => updateMethod(method.id, 'instructions', e.target.value)}
+                      placeholder="Ej: Alias MP: natalia.alma / CBU: 0000000000000000000000"
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => saveMethod(method.id)}
+                      disabled={savingMethodId === method.id}
+                      className="btn-primary text-sm py-2 disabled:opacity-60"
+                    >
+                      {savingMethodId === method.id ? 'Guardando...' : 'Guardar cambios'}
+                    </button>
+                    <button
+                      onClick={() => deleteMethod(method.id)}
+                      className="text-sm text-red-500 hover:text-red-700 font-medium"
+                    >
+                      Eliminar
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {showAddForm ? (
+              <form onSubmit={addMethod} className="border border-dashed border-gray-300 rounded-xl p-5 space-y-4">
+                <h3 className="font-medium text-gray-700 text-sm">Nuevo método de pago</h3>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Nombre *</label>
+                  <input
+                    required
+                    className="input-field"
+                    value={newMethodForm.name}
+                    onChange={(e) => setNewMethodForm({ ...newMethodForm, name: e.target.value })}
+                    placeholder="Ej: Efectivo, Transferencia, Uala..."
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Instrucciones</label>
+                  <textarea
+                    className="input-field resize-none text-sm"
+                    rows={3}
+                    value={newMethodForm.instructions}
+                    onChange={(e) => setNewMethodForm({ ...newMethodForm, instructions: e.target.value })}
+                    placeholder="Datos de pago, instrucciones, etc."
+                  />
+                </div>
+                <div className="flex gap-3">
+                  <button type="submit" className="btn-primary text-sm py-2">Agregar método</button>
+                  <button type="button" onClick={() => setShowAddForm(false)} className="btn-outline text-sm py-2">Cancelar</button>
+                </div>
+              </form>
+            ) : (
+              <button
+                onClick={() => setShowAddForm(true)}
+                className="w-full border border-dashed border-gray-300 rounded-xl py-3 text-sm text-gray-500 hover:text-gray-700 hover:border-gray-400 transition-colors"
+              >
+                + Agregar método de pago manual
+              </button>
+            )}
           </div>
-
-          <button type="submit" disabled={saving} className="btn-primary disabled:opacity-60">
-            {saving ? 'Guardando...' : 'Guardar configuración de pagos'}
-          </button>
-        </form>
+        </div>
       )}
     </div>
   )

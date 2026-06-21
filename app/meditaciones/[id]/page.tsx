@@ -1,7 +1,9 @@
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { supabaseAdmin } from '@/lib/supabase'
-import { extractYouTubeId } from '@/lib/utils'
+import { extractYouTubeId, extractSpotifyEmbed } from '@/lib/utils'
+import AudioPlayer from '@/components/AudioPlayer'
+import SpotifyEmbed from '@/components/SpotifyEmbed'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
@@ -32,7 +34,6 @@ export default async function MeditacionDetailPage({ params }: { params: Promise
   const { data: m, error } = await supabaseAdmin.from('meditations').select('*').eq('id', id).single()
   if (error || !m) notFound()
 
-  // Access control extendido con soporte para code_restricted
   let canAccess = m.visibility === 'public' || session?.user?.role === 'admin'
 
   if (!canAccess && m.visibility === 'registered') {
@@ -85,7 +86,9 @@ export default async function MeditacionDetailPage({ params }: { params: Promise
     )
   }
 
-  const youtubeId = m.video_url ? extractYouTubeId(m.video_url) : null
+  const mediaType = m.media_type ?? (m.spotify_url ? 'spotify' : m.audio_url ? 'audio' : 'youtube')
+  const youtubeId = mediaType === 'youtube' && m.video_url ? extractYouTubeId(m.video_url) : null
+  const spotifyEmbedUrl = mediaType === 'spotify' && m.spotify_url ? extractSpotifyEmbed(m.spotify_url) : null
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-12">
@@ -111,7 +114,7 @@ export default async function MeditacionDetailPage({ params }: { params: Promise
 
         {m.description && <p className="text-gray-600 leading-relaxed">{m.description}</p>}
 
-        {youtubeId ? (
+        {mediaType === 'youtube' && youtubeId && (
           <div className="aspect-video rounded-2xl overflow-hidden shadow-md">
             <iframe
               src={`https://www.youtube.com/embed/${youtubeId}`}
@@ -121,10 +124,20 @@ export default async function MeditacionDetailPage({ params }: { params: Promise
               allowFullScreen
             />
           </div>
-        ) : (
+        )}
+
+        {mediaType === 'spotify' && spotifyEmbedUrl && (
+          <SpotifyEmbed embedUrl={spotifyEmbedUrl} />
+        )}
+
+        {mediaType === 'audio' && m.audio_url && (
+          <AudioPlayer url={m.audio_url} />
+        )}
+
+        {!youtubeId && !spotifyEmbedUrl && !m.audio_url && (
           <div className="bg-gray-100 rounded-2xl p-12 text-center text-gray-400">
             <p className="text-5xl mb-4">🎵</p>
-            <p>Video no disponible</p>
+            <p>Contenido no disponible</p>
           </div>
         )}
       </div>

@@ -3,6 +3,7 @@
 import { useState, useEffect, use } from 'react'
 import { useRouter } from 'next/navigation'
 import ImageUpload from '@/components/ImageUpload'
+import AudioUpload from '@/components/AudioUpload'
 
 interface Material {
   id: string
@@ -10,6 +11,8 @@ interface Material {
   type: string
   video_url?: string
   document_url?: string
+  spotify_url?: string
+  audio_url?: string
   order?: number
 }
 
@@ -31,6 +34,24 @@ interface Course {
   modules?: Module[]
 }
 
+interface NewMaterialForm {
+  title: string
+  type: string
+  video_url: string
+  document_url: string
+  spotify_url: string
+  audio_url: string
+}
+
+const emptyMaterial: NewMaterialForm = { title: '', type: 'video', video_url: '', document_url: '', spotify_url: '', audio_url: '' }
+
+const materialTypeIcon: Record<string, string> = {
+  video: '📹',
+  document: '📄',
+  spotify: '🎵',
+  audio: '🎧',
+}
+
 export default function AdminCourseEditPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const router = useRouter()
@@ -39,7 +60,7 @@ export default function AdminCourseEditPage({ params }: { params: Promise<{ id: 
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
   const [newModule, setNewModule] = useState('')
-  const [newMaterial, setNewMaterial] = useState<Record<string, { title: string; type: string; video_url: string; document_url: string }>>({})
+  const [newMaterial, setNewMaterial] = useState<Record<string, NewMaterialForm>>({})
 
   useEffect(() => {
     fetch(`/api/courses/${id}`).then((r) => r.json()).then((data) => {
@@ -47,6 +68,14 @@ export default function AdminCourseEditPage({ params }: { params: Promise<{ id: 
       setForm({ title: data.title, description: data.description ?? '', price: String(data.price), cover_url: data.cover_url ?? '', status: data.status })
     })
   }, [id])
+
+  function getMat(moduleId: string): NewMaterialForm {
+    return newMaterial[moduleId] ?? emptyMaterial
+  }
+
+  function updateMat(moduleId: string, update: Partial<NewMaterialForm>) {
+    setNewMaterial(prev => ({ ...prev, [moduleId]: { ...getMat(moduleId), ...update } }))
+  }
 
   async function saveCourse(e: React.FormEvent) {
     e.preventDefault()
@@ -76,15 +105,28 @@ export default function AdminCourseEditPage({ params }: { params: Promise<{ id: 
   }
 
   async function addMaterial(moduleId: string) {
-    const mat = newMaterial[moduleId]
-    if (!mat?.title) return
+    const mat = getMat(moduleId)
+    if (!mat.title) return
     const module = course?.modules?.find((m) => m.id === moduleId)
+
+    // Only send relevant URL field for the type
+    const payload: Record<string, unknown> = {
+      module_id: moduleId,
+      title: mat.title,
+      type: mat.type,
+      order: (module?.materials?.length ?? 0) + 1,
+    }
+    if (mat.type === 'video') payload.video_url = mat.video_url
+    if (mat.type === 'document') payload.document_url = mat.document_url
+    if (mat.type === 'spotify') payload.spotify_url = mat.spotify_url
+    if (mat.type === 'audio') payload.audio_url = mat.audio_url
+
     await fetch('/api/materials', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ module_id: moduleId, ...mat, order: (module?.materials?.length ?? 0) + 1 }),
+      body: JSON.stringify(payload),
     })
-    setNewMaterial({ ...newMaterial, [moduleId]: { title: '', type: 'video', video_url: '', document_url: '' } })
+    updateMat(moduleId, emptyMaterial)
     const updated = await fetch(`/api/courses/${id}`).then((r) => r.json())
     setCourse(updated)
   }
@@ -158,63 +200,85 @@ export default function AdminCourseEditPage({ params }: { params: Promise<{ id: 
 
         {(course.modules ?? [])
           .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
-          .map((mod) => (
-          <div key={mod.id} className="border border-gray-200 rounded-lg overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-3 bg-gray-50">
-              <span className="font-medium text-gray-700">📚 {mod.title}</span>
-              <button onClick={() => deleteModule(mod.id)} className="text-sm text-red-500 hover:text-red-700">Eliminar módulo</button>
-            </div>
-
-            {/* Materials */}
-            <div className="p-4 space-y-2">
-              {(mod.materials ?? [])
-                .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
-                .map((mat) => (
-                <div key={mat.id} className="flex items-center justify-between py-1.5 border-b border-gray-50 last:border-0">
-                  <span className="text-sm text-gray-600">{mat.type === 'video' ? '▶' : '📄'} {mat.title}</span>
-                  <button onClick={() => deleteMaterial(mat.id)} className="text-xs text-red-400 hover:text-red-600">Eliminar</button>
+          .map((mod) => {
+            const mat = getMat(mod.id)
+            return (
+              <div key={mod.id} className="border border-gray-200 rounded-lg overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-3 bg-gray-50">
+                  <span className="font-medium text-gray-700">📚 {mod.title}</span>
+                  <button onClick={() => deleteModule(mod.id)} className="text-sm text-red-500 hover:text-red-700">Eliminar módulo</button>
                 </div>
-              ))}
 
-              {/* Add material form */}
-              <div className="pt-2 space-y-2 border-t border-gray-100">
-                <p className="text-xs font-medium text-gray-500">Agregar material</p>
-                <div className="grid grid-cols-2 gap-2">
-                  <input
-                    className="input-field text-sm"
-                    placeholder="Título del material"
-                    value={newMaterial[mod.id]?.title ?? ''}
-                    onChange={(e) => setNewMaterial({ ...newMaterial, [mod.id]: { ...newMaterial[mod.id], title: e.target.value, type: newMaterial[mod.id]?.type ?? 'video', video_url: newMaterial[mod.id]?.video_url ?? '', document_url: newMaterial[mod.id]?.document_url ?? '' } })}
-                  />
-                  <select
-                    className="input-field text-sm"
-                    value={newMaterial[mod.id]?.type ?? 'video'}
-                    onChange={(e) => setNewMaterial({ ...newMaterial, [mod.id]: { ...newMaterial[mod.id], type: e.target.value, title: newMaterial[mod.id]?.title ?? '', video_url: newMaterial[mod.id]?.video_url ?? '', document_url: newMaterial[mod.id]?.document_url ?? '' } })}
-                  >
-                    <option value="video">Video (YouTube)</option>
-                    <option value="document">Documento</option>
-                  </select>
+                {/* Materials */}
+                <div className="p-4 space-y-2">
+                  {(mod.materials ?? [])
+                    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+                    .map((m) => (
+                    <div key={m.id} className="flex items-center justify-between py-1.5 border-b border-gray-50 last:border-0">
+                      <span className="text-sm text-gray-600">{materialTypeIcon[m.type] ?? '📄'} {m.title}</span>
+                      <button onClick={() => deleteMaterial(m.id)} className="text-xs text-red-400 hover:text-red-600">Eliminar</button>
+                    </div>
+                  ))}
+
+                  {/* Add material form */}
+                  <div className="pt-2 space-y-2 border-t border-gray-100">
+                    <p className="text-xs font-medium text-gray-500">Agregar material</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <input
+                        className="input-field text-sm"
+                        placeholder="Título del material"
+                        value={mat.title}
+                        onChange={(e) => updateMat(mod.id, { title: e.target.value })}
+                      />
+                      <select
+                        className="input-field text-sm"
+                        value={mat.type}
+                        onChange={(e) => updateMat(mod.id, { type: e.target.value })}
+                      >
+                        <option value="video">📹 Video (YouTube)</option>
+                        <option value="document">📄 Documento</option>
+                        <option value="spotify">🎵 Spotify</option>
+                        <option value="audio">🎧 Audio MP3</option>
+                      </select>
+                    </div>
+
+                    {mat.type === 'video' && (
+                      <input
+                        className="input-field text-sm"
+                        placeholder="URL de YouTube"
+                        value={mat.video_url}
+                        onChange={(e) => updateMat(mod.id, { video_url: e.target.value })}
+                      />
+                    )}
+                    {mat.type === 'document' && (
+                      <input
+                        className="input-field text-sm"
+                        placeholder="URL del documento"
+                        value={mat.document_url}
+                        onChange={(e) => updateMat(mod.id, { document_url: e.target.value })}
+                      />
+                    )}
+                    {mat.type === 'spotify' && (
+                      <input
+                        className="input-field text-sm"
+                        placeholder="https://open.spotify.com/track/..."
+                        value={mat.spotify_url}
+                        onChange={(e) => updateMat(mod.id, { spotify_url: e.target.value })}
+                      />
+                    )}
+                    {mat.type === 'audio' && (
+                      <AudioUpload
+                        value={mat.audio_url}
+                        onChange={(url) => updateMat(mod.id, { audio_url: url })}
+                      />
+                    )}
+
+                    <button onClick={() => addMaterial(mod.id)} className="text-sm btn-primary py-1.5 px-3">Agregar material</button>
+                  </div>
                 </div>
-                {(newMaterial[mod.id]?.type ?? 'video') === 'video' ? (
-                  <input
-                    className="input-field text-sm"
-                    placeholder="URL de YouTube"
-                    value={newMaterial[mod.id]?.video_url ?? ''}
-                    onChange={(e) => setNewMaterial({ ...newMaterial, [mod.id]: { ...newMaterial[mod.id], video_url: e.target.value, title: newMaterial[mod.id]?.title ?? '', type: newMaterial[mod.id]?.type ?? 'video', document_url: newMaterial[mod.id]?.document_url ?? '' } })}
-                  />
-                ) : (
-                  <input
-                    className="input-field text-sm"
-                    placeholder="URL del documento"
-                    value={newMaterial[mod.id]?.document_url ?? ''}
-                    onChange={(e) => setNewMaterial({ ...newMaterial, [mod.id]: { ...newMaterial[mod.id], document_url: e.target.value, title: newMaterial[mod.id]?.title ?? '', type: newMaterial[mod.id]?.type ?? 'document', video_url: newMaterial[mod.id]?.video_url ?? '' } })}
-                  />
-                )}
-                <button onClick={() => addMaterial(mod.id)} className="text-sm btn-primary py-1.5 px-3">Agregar material</button>
               </div>
-            </div>
-          </div>
-        ))}
+            )
+          })}
 
         {/* Add module */}
         <div className="flex gap-2 pt-2 border-t border-gray-100">

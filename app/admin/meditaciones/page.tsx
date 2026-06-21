@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import AudioUpload from '@/components/AudioUpload'
 
 interface Meditation {
   id: string
@@ -8,6 +9,9 @@ interface Meditation {
   description: string
   duration_minutes: number
   video_url: string
+  spotify_url?: string
+  audio_url?: string
+  media_type?: string
   type: string
   visibility: string
   order: number
@@ -18,6 +22,9 @@ const defaultForm = {
   description: '',
   duration_minutes: '',
   video_url: '',
+  spotify_url: '',
+  audio_url: '',
+  media_type: 'youtube',
   type: 'free',
   visibility: 'public',
   order: '',
@@ -41,12 +48,19 @@ export default function AdminMeditacionesPage() {
   }
 
   function startEdit(item: Meditation) {
+    let media_type = item.media_type ?? 'youtube'
+    if (!item.media_type && item.spotify_url) media_type = 'spotify'
+    if (!item.media_type && item.audio_url) media_type = 'audio'
+
     setEditId(item.id)
     setForm({
       title: item.title,
       description: item.description ?? '',
       duration_minutes: String(item.duration_minutes ?? ''),
       video_url: item.video_url ?? '',
+      spotify_url: item.spotify_url ?? '',
+      audio_url: item.audio_url ?? '',
+      media_type,
       type: item.type,
       visibility: item.visibility,
       order: String(item.order ?? ''),
@@ -57,7 +71,24 @@ export default function AdminMeditacionesPage() {
   async function save(e: React.FormEvent) {
     e.preventDefault()
     setSaving(true)
-    const body = { ...form, duration_minutes: form.duration_minutes ? Number(form.duration_minutes) : null, order: form.order ? Number(form.order) : null }
+
+    const body: Record<string, unknown> = {
+      ...form,
+      duration_minutes: form.duration_minutes ? Number(form.duration_minutes) : null,
+      order: form.order ? Number(form.order) : null,
+    }
+
+    // Clear unused URL fields based on media_type
+    if (form.media_type === 'youtube') {
+      body.spotify_url = null
+      body.audio_url = null
+    } else if (form.media_type === 'spotify') {
+      body.video_url = null
+      body.audio_url = null
+    } else if (form.media_type === 'audio') {
+      body.video_url = null
+      body.spotify_url = null
+    }
 
     if (editId) {
       await fetch(`/api/meditaciones/${editId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
@@ -75,6 +106,13 @@ export default function AdminMeditacionesPage() {
     if (!confirm('¿Eliminar esta meditación?')) return
     await fetch(`/api/meditaciones/${id}`, { method: 'DELETE' })
     load()
+  }
+
+  const mediaTypeIcon = (m: Meditation) => {
+    const mt = m.media_type ?? (m.spotify_url ? 'spotify' : m.audio_url ? 'audio' : 'youtube')
+    if (mt === 'spotify') return '🎵'
+    if (mt === 'audio') return '🎧'
+    return '📹'
   }
 
   return (
@@ -121,10 +159,44 @@ export default function AdminMeditacionesPage() {
                 </select>
               </div>
             </div>
+
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">URL de YouTube</label>
-              <input className="input-field" value={form.video_url} onChange={(e) => setForm({ ...form, video_url: e.target.value })} placeholder="https://www.youtube.com/watch?v=..." />
+              <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de contenido</label>
+              <select className="input-field" value={form.media_type} onChange={(e) => setForm({ ...form, media_type: e.target.value })}>
+                <option value="youtube">📹 Video (YouTube)</option>
+                <option value="spotify">🎵 Spotify</option>
+                <option value="audio">🎧 Audio MP3</option>
+              </select>
             </div>
+
+            {form.media_type === 'youtube' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">URL de YouTube</label>
+                <input className="input-field" value={form.video_url} onChange={(e) => setForm({ ...form, video_url: e.target.value })} placeholder="https://www.youtube.com/watch?v=..." />
+              </div>
+            )}
+
+            {form.media_type === 'spotify' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">URL de Spotify</label>
+                <input
+                  className="input-field"
+                  value={form.spotify_url}
+                  onChange={(e) => setForm({ ...form, spotify_url: e.target.value })}
+                  placeholder="https://open.spotify.com/track/..."
+                />
+                <p className="text-xs text-gray-400 mt-1">Pegá el link del track, episodio, playlist o álbum de Spotify</p>
+              </div>
+            )}
+
+            {form.media_type === 'audio' && (
+              <AudioUpload
+                label="Archivo de audio (MP3)"
+                value={form.audio_url}
+                onChange={(url) => setForm({ ...form, audio_url: url })}
+              />
+            )}
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Orden</label>
               <input type="number" min="1" className="input-field w-24" value={form.order} onChange={(e) => setForm({ ...form, order: e.target.value })} />
@@ -157,7 +229,7 @@ export default function AdminMeditacionesPage() {
                 {items.map((item) => (
                   <tr key={item.id} className="hover:bg-gray-50">
                     <td className="px-5 py-4">
-                      <p className="font-medium text-gray-800">{item.title}</p>
+                      <p className="font-medium text-gray-800">{mediaTypeIcon(item)} {item.title}</p>
                       {item.duration_minutes && <p className="text-xs text-gray-400">{item.duration_minutes} min</p>}
                     </td>
                     <td className="px-5 py-4">

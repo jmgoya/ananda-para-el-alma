@@ -12,6 +12,7 @@ interface CourseAccess {
   approved_at?: string
   courses?: { title: string; price: number }
   users?: { email: string; name?: string }
+  manual_payment_methods?: { name: string }
   user_id: string
   course_id: string
 }
@@ -96,6 +97,11 @@ export default function AdminUsersPage() {
                       {access.users?.name ?? access.users?.email ?? access.user_id}
                     </p>
                     <p className="text-sm text-gray-500">Curso: {access.courses?.title}</p>
+                    {access.manual_payment_methods?.name && (
+                      <p className="text-sm text-gray-500">
+                        Método: <span className="font-medium text-gray-700">{access.manual_payment_methods.name}</span>
+                      </p>
+                    )}
                     <p className="text-sm text-gray-400">
                       Solicitado: {new Date(access.created_at).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                     </p>
