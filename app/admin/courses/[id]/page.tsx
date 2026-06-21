@@ -4,6 +4,7 @@ import { useState, useEffect, use } from 'react'
 import { useRouter } from 'next/navigation'
 import ImageUpload from '@/components/ImageUpload'
 import AudioUpload from '@/components/AudioUpload'
+import DocumentUpload from '@/components/DocumentUpload'
 
 interface Material {
   id: string
@@ -251,11 +252,9 @@ export default function AdminCourseEditPage({ params }: { params: Promise<{ id: 
                       />
                     )}
                     {mat.type === 'document' && (
-                      <input
-                        className="input-field text-sm"
-                        placeholder="URL del documento"
+                      <DocumentUpload
                         value={mat.document_url}
-                        onChange={(e) => updateMat(mod.id, { document_url: e.target.value })}
+                        onChange={(url) => updateMat(mod.id, { document_url: url })}
                       />
                     )}
                     {mat.type === 'spotify' && (
