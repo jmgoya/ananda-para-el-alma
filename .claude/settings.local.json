@@ -9,7 +9,32 @@
       "Bash(node -e \"require\\('resend'\\)\")",
       "Bash(node_modules/.bin/tsc --noEmit)",
       "Bash(git add *)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Bash(disown)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3001/mandala)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3001/mandala/)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3001/mandala/index.html)",
+      "Bash(curl -s http://localhost:3001/mandala/)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3001/)",
+      "Bash(curl -s -D - -o /dev/null http://localhost:3001/mandala/)",
+      "Bash(curl -s -L -o /dev/null -w \"%{http_code} %{url_effective}\\\\n\" http://localhost:3001/mandala/)",
+      "Bash(curl -s http://localhost:3001/mandala)",
+      "Skill(claude-in-chrome)",
+      "Bash(python3 -c ' *)",
+      "Bash(node --check mandala_extract.js)",
+      "Bash(npx --yes playwright --version)",
+      "Bash(npx playwright *)",
+      "Bash(npm init *)",
+      "Bash(node test_mandala.mjs)",
+      "Bash(python3 *)",
+      "Bash(node --check /tmp/claude-1000/-home-jmgoya-Documentos-GitHub-ananda-para-el-alma/8e7b24ec-7f44-40bc-b5b7-84f13572f68c/scratchpad/mandala_extract2.js)",
+      "Bash(node /tmp/claude-1000/-home-jmgoya-Documentos-GitHub-ananda-para-el-alma/8e7b24ec-7f44-40bc-b5b7-84f13572f68c/scratchpad/test_mandala2.mjs)",
+      "Bash(git -C /home/jmgoya/Documentos/GitHub/ananda-para-el-alma mv mandala_dual.py public/mandala/mandala_dual.py)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3001/mandala/mandala_dual.py)",
+      "Bash(pkill -f \"next dev\")",
+      "Bash(git checkout *)",
+      "Bash(curl -s -o /dev/null -w \"/ -> %{http_code}\\\\n\" http://localhost:3001/)",
+      "Bash(curl -s -o /dev/null -w \"/mandala -> %{http_code}\\\\n\" http://localhost:3001/mandala)"
     ]
   }
 }

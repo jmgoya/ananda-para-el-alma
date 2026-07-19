@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Mandala Dual — Generador Interactivo</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: radial-gradient(circle at 50% 0%, #241a3d 0%, #0e0a1a 60%, #06040c 100%);
+    color: #eee7f7;
+    min-height: 100vh;
+    padding: 24px 16px 60px;
+  }
+  h1 {
+    text-align: center;
+    font-weight: 600;
+    font-size: 1.4rem;
+    letter-spacing: .02em;
+    margin: 0 0 4px;
+    background: linear-gradient(90deg, #f6a6c1, #9b4dca, #8ecae6);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .subtitle {
+    text-align: center;
+    color: #b8adcf;
+    font-size: .85rem;
+    margin-bottom: 24px;
+  }
+  .wrap {
+    max-width: 620px;
+    margin: 0 auto;
+  }
+  .canvas-card {
+    background: #12101c;
+    border: 1px solid #2c2540;
+    border-radius: 16px;
+    padding: 12px;
+    box-shadow: 0 8px 30px rgba(0,0,0,.4);
+  }
+  #mandala-svg {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1 / 1;
+    display: block;
+    border-radius: 10px;
+  }
+  .panel {
+    background: #171426;
+    border: 1px solid #2c2540;
+    border-radius: 16px;
+    padding: 18px 20px;
+    margin-top: 16px;
+  }
+  .layer-toggle {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 14px;
+    border-radius: 10px;
+    border: 1px solid #4b3d78;
+    background: #241d3d;
+    color: #f0e9ff;
+    font-size: .95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .15s;
+  }
+  .layer-toggle:hover { background: #322757; }
+  .status {
+    text-align: center;
+    font-size: .78rem;
+    color: #9d8fc2;
+    margin: -6px 0 14px;
+  }
+  .slider-row { margin-bottom: 12px; }
+  .slider-row label {
+    display: flex;
+    justify-content: space-between;
+    font-size: .82rem;
+    color: #cbc0e8;
+    margin-bottom: 4px;
+  }
+  .slider-row label span.val { color: #f6a6c1; font-variant-numeric: tabular-nums; }
+  input[type="range"] {
+    width: 100%;
+    accent-color: #c86fc9;
+  }
+  .btn-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-top: 16px;
+  }
+  .btn-row.export { grid-template-columns: repeat(2, 1fr); margin-top: 8px; }
+  button.action {
+    padding: 9px 6px;
+    border-radius: 8px;
+    border: 1px solid #3a2f5c;
+    background: #201a35;
+    color: #e8e0fa;
+    font-size: .8rem;
+    cursor: pointer;
+    transition: background .15s, transform .1s;
+  }
+  button.action:hover { background: #2d2450; }
+  button.action:active { transform: scale(.97); }
+  .footnote {
+    text-align: center;
+    font-size: .72rem;
+    color: #7c6f9c;
+    margin-top: 18px;
+  }
+  .footnote a { color: #c86fc9; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Mandala Dual</h1>
+  <p class="subtitle">Generador interactivo — dos capas independientes (fondo + frente)</p>
+
+  <div class="canvas-card">
+    <svg id="mandala-svg" viewBox="-1.5 -1.5 3 3" xmlns="http://www.w3.org/2000/svg">
+      <defs id="svg-defs"></defs>
+      <g id="main-group"></g>
+    </svg>
+  </div>
+
+  <div class="panel">
+    <button class="layer-toggle" id="btn-layer">Editando: FRENTE</button>
+    <p class="status" id="status-line"></p>
+
+    <div class="slider-row">
+      <label>Simetría <span class="val" id="val-sym"></span></label>
+      <input type="range" id="s-sym" min="4" max="36" step="1">
+    </div>
+    <div class="slider-row">
+      <label>Anillos <span class="val" id="val-rings"></span></label>
+      <input type="range" id="s-rings" min="3" max="14" step="1">
+    </div>
+    <div class="slider-row">
+      <label>Complejidad <span class="val" id="val-cplx"></span></label>
+      <input type="range" id="s-cplx" min="1" max="5" step="1">
+    </div>
+    <div class="slider-row">
+      <label>Densidad <span class="val" id="val-dens"></span></label>
+      <input type="range" id="s-dens" min="1" max="4" step="1">
+    </div>
+    <div class="slider-row">
+      <label>Escala <span class="val" id="val-scale"></span></label>
+      <input type="range" id="s-scale" min="0.4" max="1.6" step="0.05">
+    </div>
+    <div class="slider-row">
+      <label>Rotación <span class="val" id="val-rot"></span></label>
+      <input type="range" id="s-rot" min="0" max="90" step="1">
+    </div>
+    <div class="slider-row">
+      <label>Zoom (global) <span class="val" id="val-zoom"></span></label>
+      <input type="range" id="s-zoom" min="0.5" max="4.0" step="0.1">
+    </div>
+
+    <div class="btn-row">
+      <button class="action" id="btn-new">Nuevo (capa)</button>
+      <button class="action" id="btn-pal">Paleta (capa)</button>
+      <button class="action" id="btn-var">Variar (capa)</button>
+    </div>
+    <div class="btn-row export">
+      <button class="action" id="btn-png">Descargar PNG</button>
+      <button class="action" id="btn-svg">Descargar SVG</button>
+    </div>
+  </div>
+
+  <p class="footnote">Versión web (HTML/JS) del script original.
+    <a href="mandala_dual.py" download>Descargar mandala_dual.py</a> (Python, requiere numpy y matplotlib para la versión de escritorio).</p>
+</div>
+
+<script>
+const SVGNS = "http://www.w3.org/2000/svg";
+
+const PALETTES = {
+  violeta_rosa: { bg: "#ffffff",
+    colors: ["#f6a6c1", "#c86fc9", "#7d3ac1", "#4b1d8c", "#2a1250", "#e28ad1", "#f6a6c1", "#9b4dca"] },
+  carnaval: { bg: "#0a0a0a",
+    colors: ["#ff4d6d", "#ffb703", "#8ecae6", "#219ebc", "#fb8500", "#e63946", "#ffd60a", "#06d6a0"] },
+  marron_dorado: { bg: "#161008",
+    colors: ["#c9a15a", "#8a5a3b", "#5c3a21", "#7d5a8c", "#3a2313", "#b98a5e", "#e8d3a0", "#9c7248"] },
+  monocromo: { bg: "#ffffff", colors: ["#111111", "#111111", "#111111", "#111111", "#111111", "#111111", "#111111", "#111111"] },
+  azul_noche: { bg: "#050510",
+    colors: ["#8ecae6", "#219ebc", "#023047", "#ffb703", "#fb8500", "#48cae4", "#e0f2ff", "#0077b6"] },
+  esmeralda: { bg: "#07130f",
+    colors: ["#2a9d8f", "#e9c46a", "#264653", "#e76f51", "#8ab17d", "#f4a261", "#e0fbfc", "#118ab2"] },
+};
+const PALETTE_NAMES = Object.keys(PALETTES);
+const HATCHES = ["", "", "////", "\\\\", "....", "||||", "----", "xxxx"];
+const DARK_BGS = ["#0a0a0a", "#161008", "#050510", "#07130f"];
+
+function leafMarquise(w, h) {
+  return { curve: true, verts: [[0,0],[w,h*0.32],[w*0.5,h*0.88],[0,h],[-w*0.5,h*0.88],[-w,h*0.32],[0,0]] };
+}
+function teardrop(w, h) {
+  return { curve: true, verts: [[0,0],[w,h*0.15],[w,h*0.55],[0,h],[-w,h*0.55],[-w,h*0.15],[0,0]] };
+}
+function petaloRedondo(w, h) {
+  return { curve: true, verts: [[-w*0.55,0],[-w,h*0.5],[-w*0.4,h],[0,h],[w*0.4,h],[w,h*0.5],
+    [w*0.55,0],[w*0.2,-h*0.05],[-w*0.2,-h*0.05],[-w*0.55,0]] };
+}
+function diamante(w, h) {
+  return { curve: false, verts: [[0,0],[w,h*0.5],[0,h],[-w,h*0.5],[0,0]] };
+}
+function lagrimaDoble(w, h) {
+  return { curve: true, verts: [[0,0],[w*0.9,h*0.2],[w*0.5,h*0.6],[0,h*0.55],[-w*0.5,h*0.6],[-w*0.9,h*0.2],[0,0]] };
+}
+const SHAPE_FUNCS = {
+  hoja_ojo: leafMarquise, gota: teardrop, petalo_redondo: petaloRedondo,
+  diamante: diamante, corazon_hoja: lagrimaDoble,
+};
+const SHAPE_KEYS = Object.keys(SHAPE_FUNCS);
+const LW = 0.006;
+
+function scalePath(shape, factor, yOffset) {
+  yOffset = yOffset || 0;
+  return { curve: shape.curve, verts: shape.verts.map(([x,y]) => [x*factor, y*factor + yOffset]) };
+}
+function toRing(shape, r0, theta) {
+  const radx = Math.cos(theta), rady = Math.sin(theta);
+  const tanx = -Math.sin(theta), tany = Math.cos(theta);
+  return { curve: shape.curve, verts: shape.verts.map(([x,y]) => {
+    const rr = r0 + y;
+    return [rr*radx + x*tanx, rr*rady + x*tany];
+  }) };
+}
+function pathD(verts, curve) {
+  let d = `M ${verts[0][0].toFixed(4)} ${verts[0][1].toFixed(4)} `;
+  if (curve) {
+    for (let i = 1; i < verts.length; i += 3) {
+      d += `C ${verts[i][0].toFixed(4)} ${verts[i][1].toFixed(4)} ${verts[i+1][0].toFixed(4)} ${verts[i+1][1].toFixed(4)} ${verts[i+2][0].toFixed(4)} ${verts[i+2][1].toFixed(4)} `;
+    }
+  } else {
+    for (let i = 1; i < verts.length; i++) d += `L ${verts[i][0].toFixed(4)} ${verts[i][1].toFixed(4)} `;
+  }
+  return d + "Z";
+}
+
+function el(tag, attrs) {
+  const e = document.createElementNS(SVGNS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  return e;
+}
+
+function mulberry32(seed) {
+  let a = seed;
+  return function() {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+class RNG {
+  constructor(seed) { this._r = mulberry32(seed); }
+  random() { return this._r(); }
+  uniform(a, b) { return a + (b - a) * this.random(); }
+  choice(arr) { return arr[Math.floor(this.random() * arr.length)]; }
+}
+
+let hatchCounter = 0;
+const hatchCache = {};
+function hatchFill(hatchType, fillColor, edgeColor) {
+  if (!hatchType) return fillColor;
+  const key = hatchType + "_" + fillColor + "_" + edgeColor;
+  if (hatchCache[key]) return hatchCache[key];
+  const id = "hatch" + (hatchCounter++);
+  const pattern = el("pattern", {
+    id, width: 0.3, height: 0.3,
+    patternUnits: "objectBoundingBox", patternContentUnits: "objectBoundingBox",
+  });
+  pattern.appendChild(el("rect", { width: 1, height: 1, fill: fillColor }));
+  const lineAttrs = { stroke: edgeColor, "stroke-width": 0.12, "vector-effect": "non-scaling-stroke" };
+  if (hatchType === "////") {
+    pattern.appendChild(el("line", { x1: 0, y1: 1, x2: 1, y2: 0, ...lineAttrs }));
+  } else if (hatchType === "\\\\") {
+    pattern.appendChild(el("line", { x1: 0, y1: 0, x2: 1, y2: 1, ...lineAttrs }));
+  } else if (hatchType === "....") {
+    pattern.appendChild(el("circle", { cx: 0.25, cy: 0.25, r: 0.12, fill: edgeColor }));
+    pattern.appendChild(el("circle", { cx: 0.75, cy: 0.75, r: 0.12, fill: edgeColor }));
+  } else if (hatchType === "||||") {
+    pattern.appendChild(el("line", { x1: 0.5, y1: 0, x2: 0.5, y2: 1, ...lineAttrs }));
+  } else if (hatchType === "----") {
+    pattern.appendChild(el("line", { x1: 0, y1: 0.5, x2: 1, y2: 0.5, ...lineAttrs }));
+  } else if (hatchType === "xxxx") {
+    pattern.appendChild(el("line", { x1: 0, y1: 1, x2: 1, y2: 0, ...lineAttrs }));
+    pattern.appendChild(el("line", { x1: 0, y1: 0, x2: 1, y2: 1, ...lineAttrs }));
+  }
+  svgDefs.appendChild(pattern);
+  const ref = `url(#${id})`;
+  hatchCache[key] = ref;
+  return ref;
+}
+
+function ringMotifs(group, rng, r0, gap, count, colors, edge, complexity, rot, allowHatch) {
+  const height = gap * rng.uniform(0.7, 1.0);
+  const width = (2 * Math.PI * r0 / count) * rng.uniform(0.34, 0.47);
+  const base = SHAPE_FUNCS[rng.choice(SHAPE_KEYS)](width, height);
+  const cf = rng.choice(colors);
+  const hatch = (complexity >= 3 && allowHatch) ? rng.choice(HATCHES) : "";
+  const layers = 1 + (complexity >= 2 ? 1 : 0) + (complexity >= 4 ? 1 : 0);
+  const thetas = Array.from({ length: count }, (_, i) => rot + 2 * Math.PI * i / count);
+  const fill0 = hatch ? hatchFill(hatch, cf, edge) : cf;
+
+  const g0 = el("g", {});
+  thetas.forEach(th => {
+    const r = toRing(base, r0, th);
+    g0.appendChild(el("path", { d: pathD(r.verts, r.curve), fill: fill0, stroke: edge, "stroke-width": 0.9 * LW }));
+  });
+  group.appendChild(g0);
+
+  for (let L = 1; L < layers; L++) {
+    const sc = 1 - L * 0.32;
+    const ib = scalePath(base, sc, height * (1 - sc) * 0.5);
+    const color = colors[(colors.indexOf(cf) + L * 2) % colors.length];
+    const gL = el("g", {});
+    thetas.forEach(th => {
+      const r = toRing(ib, r0, th);
+      gL.appendChild(el("path", { d: pathD(r.verts, r.curve), fill: color, stroke: "none" }));
+    });
+    group.appendChild(gL);
+  }
+
+  if (complexity >= 2) {
+    const dotColor = colors[(colors.indexOf(cf) + 4) % colors.length];
+    const gDots = el("g", {});
+    thetas.forEach(th => {
+      const cx = (r0 + height * 0.8) * Math.cos(th), cy = (r0 + height * 0.8) * Math.sin(th);
+      gDots.appendChild(el("circle", { cx, cy, r: width * 0.13, fill: dotColor }));
+    });
+    group.appendChild(gDots);
+  }
+}
+
+function ringBeads(group, rng, r0, count, colors, edge, rot) {
+  const cf = rng.choice(colors);
+  const radDot = (2 * Math.PI * r0 / count) * 0.32;
+  const g = el("g", {});
+  for (let i = 0; i < count; i++) {
+    const th = rot + 2 * Math.PI * i / count;
+    g.appendChild(el("circle", { cx: r0 * Math.cos(th), cy: r0 * Math.sin(th), r: radDot, fill: cf, stroke: edge, "stroke-width": 0.5 * LW }));
+  }
+  group.appendChild(g);
+}
+
+function ringRays(group, rng, r0, gap, count, colors, edge, rot) {
+  const cf = rng.choice(colors);
+  const length = gap * rng.uniform(0.5, 0.85);
+  const lw = rng.uniform(1.5, 3.0) * LW;
+  const g = el("g", {});
+  for (let i = 0; i < count; i++) {
+    const th = rot + 2 * Math.PI * i / count;
+    const x1 = r0 * Math.cos(th), y1 = r0 * Math.sin(th);
+    const x2 = (r0 + length) * Math.cos(th), y2 = (r0 + length) * Math.sin(th);
+    g.appendChild(el("line", { x1, y1, x2, y2, stroke: cf, "stroke-width": lw }));
+  }
+  group.appendChild(g);
+}
+
+function wedgeD(rIn, rOut, a0, a1) {
+  const p1 = [rOut * Math.cos(a0), rOut * Math.sin(a0)];
+  const p2 = [rOut * Math.cos(a1), rOut * Math.sin(a1)];
+  const p3 = [rIn * Math.cos(a1), rIn * Math.sin(a1)];
+  const p4 = [rIn * Math.cos(a0), rIn * Math.sin(a0)];
+  const largeArc = (a1 - a0) > Math.PI ? 1 : 0;
+  return `M ${p1[0]} ${p1[1]} A ${rOut} ${rOut} 0 ${largeArc} 1 ${p2[0]} ${p2[1]} L ${p3[0]} ${p3[1]} A ${rIn} ${rIn} 0 ${largeArc} 0 ${p4[0]} ${p4[1]} Z`;
+}
+function ringScallop(group, rng, r0, gap, count, colors, edge, rot) {
+  const cf = rng.choice(colors);
+  const angStep = (2 * Math.PI) / count;
+  const width = gap * 0.5;
+  const g = el("g", {});
+  for (let i = 0; i < count; i++) {
+    const c = rot + angStep * i;
+    g.appendChild(el("path", {
+      d: wedgeD(r0, r0 + width, c - angStep * 0.5, c + angStep * 0.5),
+      fill: cf, stroke: edge, "stroke-width": 0.6 * LW,
+    }));
+  }
+  group.appendChild(g);
+}
+
+class Layer {
+  constructor(symmetry, rings, complexity, density, palette, scale, rotDeg) {
+    this.symmetry = symmetry; this.rings = rings; this.complexity = complexity;
+    this.density = density; this.palette = palette; this.scale = scale; this.rotDeg = rotDeg;
+    this.seed = Math.floor(Math.random() * 1e9);
+  }
+  reroll() { this.seed = Math.floor(Math.random() * 1e9); }
+  nextPalette() {
+    const i = PALETTE_NAMES.indexOf(this.palette);
+    this.palette = PALETTE_NAMES[(i + 1) % PALETTE_NAMES.length];
+  }
+}
+
+const state = {
+  back: new Layer(12, 7, 3, 1, "violeta_rosa", 1.30, 0),
+  front: new Layer(16, 4, 4, 1, "azul_noche", 0.72, 15),
+  activeName: "front",
+  zoom: 1.0,
+  get active() { return this.activeName === "front" ? this.front : this.back; },
+};
+
+function drawLayer(group, P, edge) {
+  const rng = new RNG(P.seed);
+  const colors = PALETTES[P.palette].colors;
+  const maxR = 1.0 * P.scale;
+  const gap = maxR / (P.rings + 1);
+  const rot = P.rotDeg * Math.PI / 180;
+  const est = P.symmetry * P.density * P.rings;
+  const allowHatch = est <= 600;
+
+  for (let k = 0; k < P.rings; k++) {
+    const r0 = gap * (k + 1);
+    const baseCount = P.symmetry * P.density;
+    const roll = rng.random();
+    if (k === P.rings - 1 && P.complexity >= 2) {
+      ringScallop(group, rng, r0, gap, P.symmetry, colors, edge, rot);
+      ringMotifs(group, rng, r0, gap, baseCount, colors, edge, P.complexity, rot, allowHatch);
+    } else if (P.complexity >= 4 && roll < 0.25) {
+      ringBeads(group, rng, r0, P.symmetry * 2 * P.density, colors, edge, rot);
+    } else if (P.complexity >= 3 && roll < 0.4) {
+      ringRays(group, rng, r0, gap, P.symmetry * P.density, colors, edge, rot);
+    } else {
+      ringMotifs(group, rng, r0, gap, baseCount, colors, edge, P.complexity, rot, allowHatch);
+      if (P.complexity >= 2 && rng.random() < 0.5) {
+        ringBeads(group, rng, r0 + gap * 0.5, P.symmetry * 2 * P.density, colors, edge, rot);
+      }
+    }
+  }
+
+  group.appendChild(el("circle", { cx: 0, cy: 0, r: gap * 0.42, fill: colors[0], stroke: edge, "stroke-width": 1.0 * LW }));
+  if (P.complexity >= 2) {
+    ringMotifs(group, rng, gap * 0.15, gap * 0.35, P.symmetry, colors, edge, Math.min(P.complexity, 2), rot, true);
+  }
+  group.appendChild(el("circle", { cx: 0, cy: 0, r: gap * 0.12, fill: colors[2 % colors.length], stroke: "none" }));
+}
+
+const svg = document.getElementById("mandala-svg");
+const svgDefs = document.getElementById("svg-defs");
+const mainGroup = document.getElementById("main-group");
+
+function compose() {
+  const bg = PALETTES[state.back.palette].bg;
+  svg.style.backgroundColor = bg;
+  while (mainGroup.firstChild) mainGroup.removeChild(mainGroup.firstChild);
+  const edge = DARK_BGS.includes(bg) ? "#f2f2f2" : "#000000";
+
+  const backGroup = el("g", {});
+  const frontGroup = el("g", {});
+  drawLayer(backGroup, state.back, edge);
+  drawLayer(frontGroup, state.front, edge);
+  mainGroup.appendChild(backGroup);
+  mainGroup.appendChild(frontGroup);
+
+  const lim = (1.15 * Math.max(state.back.scale, state.front.scale)) / state.zoom;
+  svg.setAttribute("viewBox", `${-lim} ${-lim} ${2 * lim} ${2 * lim}`);
+
+  document.getElementById("status-line").textContent =
+    `Fondo: ${state.back.palette} · Frente: ${state.front.palette}`;
+}
+
+const sliders = {
+  sym:   { el: document.getElementById("s-sym"),   val: document.getElementById("val-sym"),   prop: "symmetry", fmt: v => v },
+  rings: { el: document.getElementById("s-rings"), val: document.getElementById("val-rings"), prop: "rings",    fmt: v => v },
+  cplx:  { el: document.getElementById("s-cplx"),  val: document.getElementById("val-cplx"),  prop: "complexity", fmt: v => v },
+  dens:  { el: document.getElementById("s-dens"),  val: document.getElementById("val-dens"),  prop: "density",  fmt: v => v },
+  scale: { el: document.getElementById("s-scale"), val: document.getElementById("val-scale"), prop: "scale",    fmt: v => Number(v).toFixed(2) },
+  rot:   { el: document.getElementById("s-rot"),   val: document.getElementById("val-rot"),   prop: "rotDeg",   fmt: v => v },
+};
+const zoomSlider = document.getElementById("s-zoom");
+const zoomVal = document.getElementById("val-zoom");
+
+function syncSlidersUI() {
+  const P = state.active;
+  for (const key in sliders) {
+    const s = sliders[key];
+    s.el.value = P[s.prop];
+    s.val.textContent = s.fmt(P[s.prop]);
+  }
+  zoomSlider.value = state.zoom;
+  zoomVal.textContent = state.zoom.toFixed(1);
+}
+
+for (const key in sliders) {
+  const s = sliders[key];
+  s.el.addEventListener("input", () => {
+    const raw = s.prop === "scale" ? parseFloat(s.el.value) : parseInt(s.el.value, 10);
+    state.active[s.prop] = raw;
+    s.val.textContent = s.fmt(raw);
+    compose();
+  });
+}
+zoomSlider.addEventListener("input", () => {
+  state.zoom = parseFloat(zoomSlider.value);
+  zoomVal.textContent = state.zoom.toFixed(1);
+  compose();
+});
+
+document.getElementById("btn-layer").addEventListener("click", (e) => {
+  state.activeName = state.activeName === "front" ? "back" : "front";
+  e.target.textContent = `Editando: ${state.activeName === "front" ? "FRENTE" : "FONDO"}`;
+  syncSlidersUI();
+  compose();
+});
+document.getElementById("btn-new").addEventListener("click", () => { state.active.reroll(); compose(); });
+document.getElementById("btn-pal").addEventListener("click", () => { state.active.nextPalette(); compose(); });
+document.getElementById("btn-var").addEventListener("click", () => { state.active.reroll(); compose(); });
+
+function svgToString() {
+  const clone = svg.cloneNode(true);
+  clone.setAttribute("xmlns", SVGNS);
+  return new XMLSerializer().serializeToString(clone);
+}
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+document.getElementById("btn-svg").addEventListener("click", () => {
+  downloadBlob(new Blob([svgToString()], { type: "image/svg+xml" }), `mandala_dual_${state.back.seed}_${state.front.seed}.svg`);
+});
+document.getElementById("btn-png").addEventListener("click", () => {
+  const svgBlob = new Blob([svgToString()], { type: "image/svg+xml;charset=utf-8" });
+  const url = URL.createObjectURL(svgBlob);
+  const img = new Image();
+  img.onload = () => {
+    const size = 1600;
+    const canvas = document.createElement("canvas");
+    canvas.width = size; canvas.height = size;
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = PALETTES[state.back.palette].bg;
+    ctx.fillRect(0, 0, size, size);
+    ctx.drawImage(img, 0, 0, size, size);
+    URL.revokeObjectURL(url);
+    canvas.toBlob(blob => downloadBlob(blob, `mandala_dual_${state.back.seed}_${state.front.seed}.png`));
+  };
+  img.src = url;
+});
+
+syncSlidersUI();
+compose();
+</script>
+</body>
+</html>
