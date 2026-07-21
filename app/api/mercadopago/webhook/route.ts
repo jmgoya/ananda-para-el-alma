@@ -30,7 +30,6 @@ export async function POST(request: NextRequest) {
       })
       .eq('user_id', userId)
       .eq('course_id', courseId)
-      .eq('payment_method', 'online')
 
     if (payment.status === 'approved') {
       // Grant course access
@@ -63,8 +62,9 @@ export async function POST(request: NextRequest) {
         .eq('course_id', courseId)
         .eq('status', 'pending')
     }
-  } catch {
-    // Always return 200 to MercadoPago
+  } catch (err) {
+    // Always return 200 to MercadoPago, but log so failures are diagnosable
+    console.error('mercadopago webhook error:', err)
   }
 
   return Response.json({ received: true })

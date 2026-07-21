@@ -25,3 +25,22 @@ export async function PUT(request: Request, ctx: RouteContext<'/api/course-acces
   if (error) return Response.json({ error: error.message }, { status: 500 })
   return Response.json(data)
 }
+
+export async function DELETE(request: Request, ctx: RouteContext<'/api/course-access/[id]'>) {
+  const session = await getServerSession(authOptions)
+  if (session?.user?.role !== 'admin') {
+    return Response.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const { id } = await ctx.params
+
+  // Only pending requests can be deleted — never touch approved/denied history
+  const { error } = await supabaseAdmin
+    .from('course_access')
+    .delete()
+    .eq('id', id)
+    .eq('status', 'pending')
+
+  if (error) return Response.json({ error: error.message }, { status: 500 })
+  return Response.json({ success: true })
+}

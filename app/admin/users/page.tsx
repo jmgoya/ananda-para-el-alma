@@ -53,13 +53,20 @@ export default function AdminUsersPage() {
     setLoading(false)
   }
 
-  async function processAccess(id: string, status: 'approved' | 'denied') {
+  async function processAccess(id: string, status: 'approved') {
     setProcessing(id)
     await fetch(`/api/course-access/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status, admin_note: adminNotes[id] }),
     })
+    setProcessing(null)
+    load()
+  }
+
+  async function rejectAccess(id: string) {
+    setProcessing(id)
+    await fetch(`/api/course-access/${id}`, { method: 'DELETE' })
     setProcessing(null)
     load()
   }
@@ -134,7 +141,7 @@ export default function AdminUsersPage() {
                       {processing === access.id ? 'Procesando...' : '✓ Aprobar acceso'}
                     </button>
                     <button
-                      onClick={() => processAccess(access.id, 'denied')}
+                      onClick={() => rejectAccess(access.id)}
                       disabled={processing === access.id}
                       className="bg-red-50 text-red-600 border border-red-200 px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-100 disabled:opacity-60"
                     >
@@ -152,6 +159,11 @@ export default function AdminUsersPage() {
       {onlineAccesses.length > 0 && (
         <section>
           <h2 className="text-lg font-semibold text-gray-700 mb-4">Pagos online recientes</h2>
+          <p className="text-sm text-gray-500 mb-3">
+            Normalmente se aprueban solos vía el webhook de MercadoPago. Si alguno queda en &quot;Pendiente&quot;
+            por mucho tiempo (el webhook no llegó o falló), podés aprobarlo manualmente acá. &quot;Rechazar&quot;
+            elimina la solicitud pendiente (para pagos que nunca se completaron).
+          </p>
           <div className="bg-white rounded-xl shadow-sm overflow-hidden">
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-100">
@@ -160,6 +172,7 @@ export default function AdminUsersPage() {
                   <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Curso</th>
                   <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Estado</th>
                   <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Fecha</th>
+                  <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
@@ -174,6 +187,28 @@ export default function AdminUsersPage() {
                     </td>
                     <td className="px-5 py-4 text-sm text-gray-400">
                       {new Date(access.created_at).toLocaleDateString('es-AR')}
+                    </td>
+                    <td className="px-5 py-4">
+                      {access.status === 'pending' ? (
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => processAccess(access.id, 'approved')}
+                            disabled={processing === access.id}
+                            className="btn-primary py-1 px-3 text-xs disabled:opacity-60"
+                          >
+                            {processing === access.id ? '...' : '✓ Aprobar'}
+                          </button>
+                          <button
+                            onClick={() => rejectAccess(access.id)}
+                            disabled={processing === access.id}
+                            className="bg-red-50 text-red-600 border border-red-200 px-3 py-1 rounded-lg text-xs font-medium hover:bg-red-100 disabled:opacity-60"
+                          >
+                            ✗ Rechazar
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-gray-300">—</span>
+                      )}
                     </td>
                   </tr>
                 ))}
