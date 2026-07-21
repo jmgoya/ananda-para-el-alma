@@ -34,12 +34,13 @@ export async function DELETE(request: Request, ctx: RouteContext<'/api/course-ac
 
   const { id } = await ctx.params
 
-  // Only pending requests can be deleted — never touch approved/denied history
+  // Only pending/denied requests can be deleted — approved access must be revoked
+  // (set to 'denied' via PUT) before it can be removed, never deleted directly.
   const { error } = await supabaseAdmin
     .from('course_access')
     .delete()
     .eq('id', id)
-    .eq('status', 'pending')
+    .in('status', ['pending', 'denied'])
 
   if (error) return Response.json({ error: error.message }, { status: 500 })
   return Response.json({ success: true })

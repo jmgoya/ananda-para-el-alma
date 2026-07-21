@@ -47,13 +47,22 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: 'Ya tenés acceso a este curso' }, { status: 400 })
   }
 
+  const { data: course } = await supabaseAdmin
+    .from('courses')
+    .select('price')
+    .eq('id', course_id)
+    .single()
+
+  const isFree = !!course && Number(course.price) === 0
+
   const insertData: Record<string, unknown> = {
     user_id: session.user.id,
     course_id,
-    status: 'pending',
-    payment_method: payment_method ?? 'manual',
+    status: isFree ? 'approved' : 'pending',
+    payment_method: isFree ? 'free' : (payment_method ?? 'manual'),
     payment_note,
   }
+  if (isFree) insertData.approved_at = new Date().toISOString()
   if (manual_payment_method_id) insertData.manual_payment_method_id = manual_payment_method_id
 
   const { data, error } = await supabaseAdmin

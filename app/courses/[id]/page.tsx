@@ -1,10 +1,10 @@
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { getCourse, getUserCourseAccess } from '@/lib/db'
-import Link from 'next/link'
 import Image from 'next/image'
 import { formatPrice } from '@/lib/utils'
 import { notFound } from 'next/navigation'
+import CourseAccessButton from '@/components/CourseAccessButton'
 
 export default async function CourseDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -75,24 +75,13 @@ export default async function CourseDetailPage({ params }: { params: Promise<{ i
               {formatPrice(Number(course.price), course.currency)}
             </p>
 
-            {!session ? (
-              <Link href={`/auth/login?callbackUrl=/courses/${id}`} className="btn-primary w-full justify-center py-3 text-center block">
-                Comprar curso
-              </Link>
-            ) : isApproved ? (
-              <Link href={`/student/courses/${id}`} className="btn-primary w-full justify-center py-3 text-center block">
-                Acceder al curso →
-              </Link>
-            ) : isPending ? (
-              <div className="text-center">
-                <span className="badge badge-yellow text-sm px-4 py-2">Tu solicitud está en revisión</span>
-                <p className="text-xs text-gray-400 mt-2">Natalia la revisará pronto y recibirás confirmación</p>
-              </div>
-            ) : (
-              <Link href={`/checkout/${id}`} className="btn-primary w-full justify-center py-3 text-center block">
-                Solicitar / Comprar
-              </Link>
-            )}
+            <CourseAccessButton
+              courseId={id}
+              price={Number(course.price)}
+              isLoggedIn={!!session}
+              isApproved={isApproved}
+              isPending={isPending}
+            />
 
             <ul className="mt-6 space-y-2 text-sm text-gray-500">
               <li className="flex items-center gap-2"><span>📱</span> Acceso desde cualquier dispositivo</li>
