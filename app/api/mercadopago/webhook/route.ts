@@ -1,5 +1,5 @@
 import { supabaseAdmin } from '@/lib/supabase'
-import { getPayment } from '@/lib/mercadopago'
+import { getPaymentWithRetry } from '@/lib/mercadopago'
 import { NextRequest } from 'next/server'
 
 export async function POST(request: NextRequest) {
@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     if (!paymentId) return Response.json({ received: true })
 
     // Validate payment by querying MercadoPago API
-    const payment = await getPayment(paymentId)
+    const payment = await getPaymentWithRetry(paymentId)
 
     // Parse external_reference: "userId:courseId"
     const [userId, courseId] = (payment.external_reference ?? '').split(':')

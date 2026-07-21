@@ -51,3 +51,20 @@ export async function getPayment(paymentId: string) {
   const payment = new Payment(client)
   return payment.get({ id: paymentId })
 }
+
+// MercadoPago's webhook notification can arrive slightly before the payment
+// is actually queryable via the API, returning a transient 404. Retry a few
+// times with a short delay before giving up.
+export async function getPaymentWithRetry(paymentId: string, attempts = 3, delayMs = 1200) {
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await getPayment(paymentId)
+    } catch (err) {
+      const status = (err as { status?: number })?.status
+      const isLastAttempt = i === attempts - 1
+      if (status !== 404 || isLastAttempt) throw err
+      await new Promise((resolve) => setTimeout(resolve, delayMs))
+    }
+  }
+  throw new Error('unreachable')
+}

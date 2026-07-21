@@ -28,6 +28,23 @@ interface ManualPaymentMethod {
   order: number
 }
 
+function EyeIcon({ open }: { open: boolean }) {
+  if (open) {
+    return (
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+        <path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a18.4 18.4 0 0 1 5.06-5.94M9.9 4.24A10.4 10.4 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+        <line x1="1" y1="1" x2="23" y2="23" />
+      </svg>
+    )
+  }
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  )
+}
+
 export default function AdminSettingsPage() {
   const [tab, setTab] = useState<'general' | 'payments'>('general')
   const [siteConfig, setSiteConfig] = useState<SiteConfig>({
@@ -51,6 +68,8 @@ export default function AdminSettingsPage() {
   const [newMethodForm, setNewMethodForm] = useState({ name: '', instructions: '' })
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
+  const [showAccessToken, setShowAccessToken] = useState(false)
+  const [showPublicKey, setShowPublicKey] = useState(false)
 
   useEffect(() => {
     Promise.all([
@@ -269,24 +288,46 @@ export default function AdminSettingsPage() {
               <>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">MercadoPago Access Token</label>
-                  <input
-                    type="password"
-                    className="input-field font-mono"
-                    value={paymentConfig.mercadopago_access_token}
-                    onChange={(e) => setPaymentConfig({ ...paymentConfig, mercadopago_access_token: e.target.value })}
-                    placeholder="APP_USR-..."
-                  />
+                  <div className="relative">
+                    <input
+                      type={showAccessToken ? 'text' : 'password'}
+                      className="input-field font-mono"
+                      style={{ paddingRight: '2.5rem' }}
+                      value={paymentConfig.mercadopago_access_token}
+                      onChange={(e) => setPaymentConfig({ ...paymentConfig, mercadopago_access_token: e.target.value })}
+                      placeholder="APP_USR-..."
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowAccessToken((v) => !v)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      aria-label={showAccessToken ? 'Ocultar Access Token' : 'Mostrar Access Token'}
+                    >
+                      <EyeIcon open={showAccessToken} />
+                    </button>
+                  </div>
                   <p className="text-xs text-gray-400 mt-1">Token de acceso de tu cuenta MercadoPago (Credentials en el panel de MP)</p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">MercadoPago Public Key</label>
-                  <input
-                    type="password"
-                    className="input-field font-mono"
-                    value={paymentConfig.mercadopago_public_key}
-                    onChange={(e) => setPaymentConfig({ ...paymentConfig, mercadopago_public_key: e.target.value })}
-                    placeholder="APP_USR-..."
-                  />
+                  <div className="relative">
+                    <input
+                      type={showPublicKey ? 'text' : 'password'}
+                      className="input-field font-mono"
+                      style={{ paddingRight: '2.5rem' }}
+                      value={paymentConfig.mercadopago_public_key}
+                      onChange={(e) => setPaymentConfig({ ...paymentConfig, mercadopago_public_key: e.target.value })}
+                      placeholder="APP_USR-..."
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPublicKey((v) => !v)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      aria-label={showPublicKey ? 'Ocultar Public Key' : 'Mostrar Public Key'}
+                    >
+                      <EyeIcon open={showPublicKey} />
+                    </button>
+                  </div>
                 </div>
               </>
             )}

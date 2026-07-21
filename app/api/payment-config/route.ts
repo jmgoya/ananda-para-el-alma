@@ -40,11 +40,13 @@ export async function PUT(request: NextRequest) {
   }
 
   // Only update tokens if new values provided (not masked placeholders)
-  if (body.mercadopago_access_token && !body.mercadopago_access_token.startsWith('••••')) {
-    updateData.mercadopago_access_token = body.mercadopago_access_token
+  const accessToken = body.mercadopago_access_token?.trim()
+  const publicKey = body.mercadopago_public_key?.trim()
+  if (accessToken && !accessToken.startsWith('••••')) {
+    updateData.mercadopago_access_token = accessToken
   }
-  if (body.mercadopago_public_key && !body.mercadopago_public_key.startsWith('••••')) {
-    updateData.mercadopago_public_key = body.mercadopago_public_key
+  if (publicKey && !publicKey.startsWith('••••')) {
+    updateData.mercadopago_public_key = publicKey
   }
 
   const { data: existing } = await supabaseAdmin.from('payment_config').select('id').single()
