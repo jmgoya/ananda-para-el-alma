@@ -34,7 +34,13 @@
       "Bash(pkill -f \"next dev\")",
       "Bash(git checkout *)",
       "Bash(curl -s -o /dev/null -w \"/ -> %{http_code}\\\\n\" http://localhost:3001/)",
-      "Bash(curl -s -o /dev/null -w \"/mandala -> %{http_code}\\\\n\" http://localhost:3001/mandala)"
+      "Bash(curl -s -o /dev/null -w \"/mandala -> %{http_code}\\\\n\" http://localhost:3001/mandala)",
+      "Bash(xargs -I{} echo {})",
+      "Bash(mkdir -p \"/home/jmgoya/Documentos/GitHub/ananda-para-el-alma/app/api/drive-audio/[id]\")",
+      "Bash(npx next *)",
+      "Bash(npx tsc *)",
+      "Bash(npx eslint *)",
+      "Bash(curl -sS -o /dev/null -w \"%{http_code}\\\\n\" --max-time 8 https://www.google.com)"
     ]
   }
 }

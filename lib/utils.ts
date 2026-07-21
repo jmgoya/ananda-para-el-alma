@@ -24,3 +24,10 @@ export function extractSpotifyEmbed(url: string): string | null {
   if (!match) return null
   return `https://open.spotify.com/embed/${match[1]}/${match[2]}`
 }
+
+export function extractGoogleDriveId(url: string): string | null {
+  const match = url.match(
+    /drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?(?:export=download&)?id=)([a-zA-Z0-9_-]+)/
+  )
+  return match?.[1] ?? null
+}
