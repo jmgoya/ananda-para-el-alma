@@ -40,7 +40,13 @@
       "Bash(npx next *)",
       "Bash(npx tsc *)",
       "Bash(npx eslint *)",
-      "Bash(curl -sS -o /dev/null -w \"%{http_code}\\\\n\" --max-time 8 https://www.google.com)"
+      "Bash(curl -sS -o /dev/null -w \"%{http_code}\\\\n\" --max-time 8 https://www.google.com)",
+      "Read(//home/jmgoya/.config/**)",
+      "Read(//home/jmgoya/**)",
+      "Bash(mkdir -p /tmp/claude-1000/-home-jmgoya-Documentos-GitHub-ananda-para-el-alma/ab0ccf40-1736-40d7-869c-27ad999bb3e1/scratchpad *)",
+      "WebFetch(domain:source.chromium.org)",
+      "WebFetch(domain:chromium.googlesource.com)",
+      "Bash(grep -E \"^total errors|leftover: [0-9]+$\")"
     ]
   }
 }
