@@ -6,6 +6,7 @@ import Link from 'next/link'
 const navItems = [
   { href: '/admin', label: 'Dashboard', icon: '📊' },
   { href: '/admin/courses', label: 'Cursos', icon: '📚' },
+  { href: '/admin/turnos', label: 'Turnos', icon: '📅' },
   { href: '/admin/meditaciones', label: 'Meditaciones', icon: '🧘' },
   { href: '/admin/publicaciones', label: 'Publicaciones', icon: '📝' },
   { href: '/admin/users', label: 'Usuarios', icon: '👥' },

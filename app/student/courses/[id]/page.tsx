@@ -111,8 +111,20 @@ export default async function StudentCoursePage({ params }: { params: Promise<{ 
                               allowFullScreen
                             />
                           </div>
-                        ) : null
+                        ) : (
+                          <a
+                            href={mat.video_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="btn-outline inline-flex"
+                          >
+                            ▶️ Ver video
+                          </a>
+                        )
                       })()}
+                      {mat.type === 'video' && !mat.video_url && (
+                        <p className="text-sm text-gray-400">Este video todavía no tiene un link asociado.</p>
+                      )}
                       {mat.type === 'document' && mat.document_url && (
                         <a
                           href={mat.document_url}

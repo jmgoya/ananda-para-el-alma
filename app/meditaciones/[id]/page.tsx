@@ -134,7 +134,13 @@ export default async function MeditacionDetailPage({ params }: { params: Promise
           <AudioPlayer url={m.audio_url} />
         )}
 
-        {!youtubeId && !spotifyEmbedUrl && !m.audio_url && (
+        {mediaType === 'youtube' && !youtubeId && m.video_url && (
+          <a href={m.video_url} target="_blank" rel="noopener noreferrer" className="btn-outline inline-flex">
+            ▶️ Ver video
+          </a>
+        )}
+
+        {!youtubeId && !spotifyEmbedUrl && !m.audio_url && !(mediaType === 'youtube' && m.video_url) && (
           <div className="bg-gray-100 rounded-2xl p-12 text-center text-gray-400">
             <p className="text-5xl mb-4">🎵</p>
             <p>Contenido no disponible</p>

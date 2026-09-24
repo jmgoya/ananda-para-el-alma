@@ -32,6 +32,7 @@ export default function Navbar({ siteName, logoUrl }: { siteName?: string; logoU
           <Link href="/courses" className="hover:text-gray-900 transition-colors">Cursos</Link>
           <Link href="/meditaciones" className="hover:text-gray-900 transition-colors">Meditaciones</Link>
           <Link href="/publicaciones" className="hover:text-gray-900 transition-colors">Publicaciones</Link>
+          <Link href="/turnos" className="hover:text-gray-900 transition-colors">Turnos</Link>
           {session?.user?.role === 'admin' && (
             <Link href="/admin" className="hover:text-gray-900 transition-colors" style={{ color: 'var(--color-primary)' }}>
               Admin
@@ -68,6 +69,7 @@ export default function Navbar({ siteName, logoUrl }: { siteName?: string; logoU
           <Link href="/courses" onClick={() => setOpen(false)}>Cursos</Link>
           <Link href="/meditaciones" onClick={() => setOpen(false)}>Meditaciones</Link>
           <Link href="/publicaciones" onClick={() => setOpen(false)}>Publicaciones</Link>
+          <Link href="/turnos" onClick={() => setOpen(false)}>Turnos</Link>
           {session?.user?.role === 'admin' && (
             <Link href="/admin" onClick={() => setOpen(false)}>Admin</Link>
           )}

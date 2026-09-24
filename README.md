@@ -45,8 +45,9 @@ SMTP_FROM=noreply@tudominio.com # Dirección remitente de los emails
 3. En el SQL Editor, ejecutar `supabase/migration_redemption_codes.sql`
 4. En el SQL Editor, ejecutar `supabase/migration_password_reset.sql`
 5. En el SQL Editor, ejecutar `supabase/migration_audio_spotify.sql`
-6. En Storage → New bucket: crear bucket `uploads` (público)
-6. Copiar las claves a `.env.local`
+6. En el SQL Editor, ejecutar `supabase/migration_appointments.sql`
+7. En Storage → New bucket: crear bucket `uploads` (público)
+8. Copiar las claves a `.env.local`
 
 ### 4. Crear el primer usuario admin
 
