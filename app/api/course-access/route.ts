@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     .eq('user_id', session.user.id)
     .eq('course_id', course_id)
     .eq('status', 'approved')
-    .single()
+    .maybeSingle()
 
   if (existing) {
     return Response.json({ error: 'Ya tenés acceso a este curso' }, { status: 400 })
@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
 
   const { data, error } = await supabaseAdmin
     .from('course_access')
-    .insert(insertData)
+    .upsert(insertData, { onConflict: 'user_id,course_id' })
     .select()
     .single()
 

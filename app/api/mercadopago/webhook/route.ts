@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
         .select('id')
         .eq('user_id', userId)
         .eq('course_id', courseId)
-        .single()
+        .maybeSingle()
 
       if (existing?.id) {
         await supabaseAdmin

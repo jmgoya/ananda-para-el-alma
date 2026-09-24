@@ -43,7 +43,7 @@ export default async function StudentCoursePage({ params }: { params: Promise<{ 
     .eq('user_id', session!.user.id)
     .eq('course_id', id)
     .eq('status', 'approved')
-    .single()
+    .maybeSingle()
 
   if (!access) redirect(`/courses/${id}`)
 

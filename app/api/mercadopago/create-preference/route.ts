@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     .eq('user_id', session.user.id)
     .eq('course_id', course_id)
     .eq('status', 'approved')
-    .single()
+    .maybeSingle()
 
   if (existing) {
     return Response.json({ error: 'Ya tenés acceso a este curso' }, { status: 400 })
@@ -44,13 +44,19 @@ export async function POST(request: NextRequest) {
       userEmail: session.user.email!,
     })
 
-    // Register a pending online transaction
-    await supabaseAdmin.from('course_access').upsert({
-      user_id: session.user.id,
-      course_id: course_id,
-      status: 'pending',
-      payment_method: 'online',
-    })
+    // Register a pending online transaction. onConflict targets the
+    // (user_id, course_id) unique constraint so repeated checkout attempts
+    // reuse the same row instead of creating duplicates that break later
+    // `.single()` lookups (webhook, access checks).
+    await supabaseAdmin.from('course_access').upsert(
+      {
+        user_id: session.user.id,
+        course_id: course_id,
+        status: 'pending',
+        payment_method: 'online',
+      },
+      { onConflict: 'user_id,course_id' }
+    )
 
     await supabaseAdmin.from('transactions').insert({
       user_id: session.user.id,

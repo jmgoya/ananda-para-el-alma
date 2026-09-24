@@ -82,7 +82,8 @@ CREATE TABLE course_access (
   payment_note TEXT,
   admin_note TEXT,
   approved_at TIMESTAMP,
-  created_at TIMESTAMP DEFAULT now()
+  created_at TIMESTAMP DEFAULT now(),
+  UNIQUE (user_id, course_id)
 );
 
 CREATE TABLE transactions (
