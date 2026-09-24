@@ -1,5 +1,6 @@
 import { MercadoPagoConfig, Preference, Payment } from 'mercadopago'
 import { getPaymentConfig } from './db'
+import { supabaseAdmin } from './supabase'
 
 export async function getMercadoPagoClient() {
   const config = await getPaymentConfig()
@@ -67,4 +68,47 @@ export async function getPaymentWithRetry(paymentId: string, attempts = 3, delay
     }
   }
   throw new Error('unreachable')
+}
+
+// Shared by the async webhook and the checkout success page: MercadoPago
+// redirects the browser back with the payment id in the URL, so we can
+// confirm the payment right away instead of relying solely on the webhook
+// notification (which depends on the notification_url/dashboard webhook
+// config actually reaching this app).
+export async function syncPaymentStatus(paymentId: string) {
+  const payment = await getPaymentWithRetry(paymentId)
+
+  const [userId, courseId] = (payment.external_reference ?? '').split(':')
+  if (!userId || !courseId) return null
+
+  await supabaseAdmin
+    .from('transactions')
+    .update({
+      mercadopago_payment_id: paymentId,
+      status: payment.status ?? 'unknown',
+    })
+    .eq('user_id', userId)
+    .eq('course_id', courseId)
+
+  if (payment.status === 'approved') {
+    await supabaseAdmin.from('course_access').upsert(
+      {
+        user_id: userId,
+        course_id: courseId,
+        status: 'approved',
+        payment_method: 'online',
+        approved_at: new Date().toISOString(),
+      },
+      { onConflict: 'user_id,course_id' }
+    )
+  } else if (payment.status === 'rejected') {
+    await supabaseAdmin
+      .from('course_access')
+      .update({ status: 'denied' })
+      .eq('user_id', userId)
+      .eq('course_id', courseId)
+      .eq('status', 'pending')
+  }
+
+  return { userId, courseId, status: payment.status ?? 'unknown' }
 }
