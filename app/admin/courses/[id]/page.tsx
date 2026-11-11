@@ -62,6 +62,10 @@ export default function AdminCourseEditPage({ params }: { params: Promise<{ id: 
   const [message, setMessage] = useState('')
   const [newModule, setNewModule] = useState('')
   const [newMaterial, setNewMaterial] = useState<Record<string, NewMaterialForm>>({})
+  const [editingModuleId, setEditingModuleId] = useState<string | null>(null)
+  const [editModuleTitle, setEditModuleTitle] = useState('')
+  const [editingMaterialId, setEditingMaterialId] = useState<string | null>(null)
+  const [editMaterial, setEditMaterial] = useState<NewMaterialForm>(emptyMaterial)
 
   useEffect(() => {
     fetch(`/api/courses/${id}`).then((r) => r.json()).then((data) => {
@@ -128,6 +132,88 @@ export default function AdminCourseEditPage({ params }: { params: Promise<{ id: 
       body: JSON.stringify(payload),
     })
     updateMat(moduleId, emptyMaterial)
+    const updated = await fetch(`/api/courses/${id}`).then((r) => r.json())
+    setCourse(updated)
+  }
+
+  function startEditModule(moduleId: string, title: string) {
+    setEditingModuleId(moduleId)
+    setEditModuleTitle(title)
+  }
+
+  async function saveModuleEdit(moduleId: string) {
+    if (!editModuleTitle.trim()) return
+    await fetch(`/api/modules/${moduleId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: editModuleTitle }),
+    })
+    setEditingModuleId(null)
+    const updated = await fetch(`/api/courses/${id}`).then((r) => r.json())
+    setCourse(updated)
+  }
+
+  function startEditMaterial(material: Material) {
+    setEditingMaterialId(material.id)
+    setEditMaterial({
+      title: material.title,
+      type: material.type,
+      video_url: material.video_url ?? '',
+      document_url: material.document_url ?? '',
+      spotify_url: material.spotify_url ?? '',
+      audio_url: material.audio_url ?? '',
+    })
+  }
+
+  async function saveMaterialEdit(materialId: string) {
+    if (!editMaterial.title) return
+
+    const payload: Record<string, unknown> = {
+      title: editMaterial.title,
+      type: editMaterial.type,
+      video_url: null,
+      document_url: null,
+      spotify_url: null,
+      audio_url: null,
+    }
+    if (editMaterial.type === 'video') payload.video_url = editMaterial.video_url
+    if (editMaterial.type === 'document') payload.document_url = editMaterial.document_url
+    if (editMaterial.type === 'spotify') payload.spotify_url = editMaterial.spotify_url
+    if (editMaterial.type === 'audio') payload.audio_url = editMaterial.audio_url
+
+    await fetch(`/api/materials/${materialId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+    setEditingMaterialId(null)
+    const updated = await fetch(`/api/courses/${id}`).then((r) => r.json())
+    setCourse(updated)
+  }
+
+  async function moveModule(moduleId: string, direction: 'up' | 'down') {
+    const sorted = [...(course?.modules ?? [])].sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+    const idx = sorted.findIndex((m) => m.id === moduleId)
+    const swapIdx = direction === 'up' ? idx - 1 : idx + 1
+    if (idx === -1 || swapIdx < 0 || swapIdx >= sorted.length) return
+
+    const current = sorted[idx]
+    const target = sorted[swapIdx]
+    const currentOrder = current.order ?? idx
+    const targetOrder = target.order ?? swapIdx
+
+    await Promise.all([
+      fetch(`/api/modules/${current.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ order: targetOrder }),
+      }),
+      fetch(`/api/modules/${target.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ order: currentOrder }),
+      }),
+    ])
     const updated = await fetch(`/api/courses/${id}`).then((r) => r.json())
     setCourse(updated)
   }
@@ -201,13 +287,34 @@ export default function AdminCourseEditPage({ params }: { params: Promise<{ id: 
 
         {(course.modules ?? [])
           .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
-          .map((mod) => {
+          .map((mod, modIdx, sortedModules) => {
             const mat = getMat(mod.id)
             return (
               <div key={mod.id} className="border border-gray-200 rounded-lg overflow-hidden">
-                <div className="flex items-center justify-between px-4 py-3 bg-gray-50">
-                  <span className="font-medium text-gray-700">📚 {mod.title}</span>
-                  <button onClick={() => deleteModule(mod.id)} className="text-sm text-red-500 hover:text-red-700">Eliminar módulo</button>
+                <div className="flex items-center justify-between px-4 py-3 bg-gray-50 gap-3">
+                  {editingModuleId === mod.id ? (
+                    <div className="flex items-center gap-2 flex-1">
+                      <input
+                        autoFocus
+                        className="input-field text-sm flex-1"
+                        value={editModuleTitle}
+                        onChange={(e) => setEditModuleTitle(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); saveModuleEdit(mod.id) } }}
+                      />
+                      <button onClick={() => saveModuleEdit(mod.id)} className="text-sm text-green-600 hover:text-green-800 whitespace-nowrap">Guardar</button>
+                      <button onClick={() => setEditingModuleId(null)} className="text-sm text-gray-400 hover:text-gray-600 whitespace-nowrap">Cancelar</button>
+                    </div>
+                  ) : (
+                    <>
+                      <span className="font-medium text-gray-700">📚 {mod.title}</span>
+                      <div className="flex items-center gap-3 whitespace-nowrap">
+                        <button onClick={() => moveModule(mod.id, 'up')} disabled={modIdx === 0} className="text-sm text-gray-400 hover:text-gray-700 disabled:opacity-30 disabled:cursor-not-allowed">↑</button>
+                        <button onClick={() => moveModule(mod.id, 'down')} disabled={modIdx === sortedModules.length - 1} className="text-sm text-gray-400 hover:text-gray-700 disabled:opacity-30 disabled:cursor-not-allowed">↓</button>
+                        <button onClick={() => startEditModule(mod.id, mod.title)} className="text-sm text-gray-500 hover:text-gray-700">Editar</button>
+                        <button onClick={() => deleteModule(mod.id)} className="text-sm text-red-500 hover:text-red-700">Eliminar módulo</button>
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 {/* Materials */}
@@ -215,10 +322,71 @@ export default function AdminCourseEditPage({ params }: { params: Promise<{ id: 
                   {(mod.materials ?? [])
                     .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
                     .map((m) => (
-                    <div key={m.id} className="flex items-center justify-between py-1.5 border-b border-gray-50 last:border-0">
-                      <span className="text-sm text-gray-600">{materialTypeIcon[m.type] ?? '📄'} {m.title}</span>
-                      <button onClick={() => deleteMaterial(m.id)} className="text-xs text-red-400 hover:text-red-600">Eliminar</button>
-                    </div>
+                    editingMaterialId === m.id ? (
+                      <div key={m.id} className="py-2 space-y-2 border-b border-gray-50 last:border-0">
+                        <div className="grid grid-cols-2 gap-2">
+                          <input
+                            autoFocus
+                            className="input-field text-sm"
+                            placeholder="Título del material"
+                            value={editMaterial.title}
+                            onChange={(e) => setEditMaterial({ ...editMaterial, title: e.target.value })}
+                          />
+                          <select
+                            className="input-field text-sm"
+                            value={editMaterial.type}
+                            onChange={(e) => setEditMaterial({ ...editMaterial, type: e.target.value })}
+                          >
+                            <option value="video">📹 Video (YouTube)</option>
+                            <option value="document">📄 Documento</option>
+                            <option value="spotify">🎵 Spotify</option>
+                            <option value="audio">🎧 Audio MP3</option>
+                          </select>
+                        </div>
+
+                        {editMaterial.type === 'video' && (
+                          <input
+                            className="input-field text-sm"
+                            placeholder="URL de YouTube"
+                            value={editMaterial.video_url}
+                            onChange={(e) => setEditMaterial({ ...editMaterial, video_url: e.target.value })}
+                          />
+                        )}
+                        {editMaterial.type === 'document' && (
+                          <DocumentUpload
+                            value={editMaterial.document_url}
+                            onChange={(url) => setEditMaterial({ ...editMaterial, document_url: url })}
+                          />
+                        )}
+                        {editMaterial.type === 'spotify' && (
+                          <input
+                            className="input-field text-sm"
+                            placeholder="https://open.spotify.com/track/..."
+                            value={editMaterial.spotify_url}
+                            onChange={(e) => setEditMaterial({ ...editMaterial, spotify_url: e.target.value })}
+                          />
+                        )}
+                        {editMaterial.type === 'audio' && (
+                          <AudioUpload
+                            value={editMaterial.audio_url}
+                            onChange={(url) => setEditMaterial({ ...editMaterial, audio_url: url })}
+                          />
+                        )}
+
+                        <div className="flex gap-3">
+                          <button onClick={() => saveMaterialEdit(m.id)} className="text-sm text-green-600 hover:text-green-800">Guardar</button>
+                          <button onClick={() => setEditingMaterialId(null)} className="text-sm text-gray-400 hover:text-gray-600">Cancelar</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div key={m.id} className="flex items-center justify-between py-1.5 border-b border-gray-50 last:border-0">
+                        <span className="text-sm text-gray-600">{materialTypeIcon[m.type] ?? '📄'} {m.title}</span>
+                        <div className="flex items-center gap-3">
+                          <button onClick={() => startEditMaterial(m)} className="text-xs text-gray-500 hover:text-gray-700">Editar</button>
+                          <button onClick={() => deleteMaterial(m.id)} className="text-xs text-red-400 hover:text-red-600">Eliminar</button>
+                        </div>
+                      </div>
+                    )
                   ))}
 
                   {/* Add material form */}
